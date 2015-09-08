@@ -1248,7 +1248,6 @@ struct snd_soc_card *populate_snd_card_dailinks(struct device *dev)
 
 	card->dev = dev;
 	ret = snd_soc_of_parse_card_name(card, "qcom,model");
-	pr_debug("At %d In (%s),ret=%d,card->name=%s\n",__LINE__, __FUNCTION__,ret,card->name);
 	if (ret) {
 		dev_err(dev, "%s: parse card name failed, err:%d\n",
 				__func__, ret);
@@ -1292,8 +1291,6 @@ struct snd_soc_card *populate_snd_card_dailinks(struct device *dev)
 		memcpy(msm8952_tasha_dai_links + len3,
 			msm8952_tasha_be_dai, sizeof(msm8952_tasha_be_dai));
 		msm8952_dai_links = msm8952_tasha_dai_links;
-
-		pr_debug("At %d In (%s)\n",__LINE__, __FUNCTION__);
 
 		ret = of_property_read_u32(dev->of_node,
 				"qcom,max-aux-codec", &max_aux_dev);
@@ -1377,12 +1374,9 @@ struct snd_soc_card *populate_snd_card_dailinks(struct device *dev)
 			temp_str = NULL;
 		}
 	}
-
-	pr_debug("At %d In (%s)\n",__LINE__, __FUNCTION__);
 	card->aux_dev = msm895x_aux_dev;
 	card->codec_conf = msm895x_codec_conf;
 ret_card:
-	pr_debug("At %d In (%s),in ret_card\n",__LINE__, __FUNCTION__);
 	card->num_configs = max_aux_dev;
 	card->num_aux_devs = max_aux_dev;
 	card->dai_link = msm8952_dai_links;
@@ -1391,7 +1385,6 @@ ret_card:
 
 	return card;
 err:
-	pr_debug("At %d In (%s),in error\n",__LINE__, __FUNCTION__);
 	if (max_aux_dev > 0) {
 		for (i = 0; i < max_aux_dev; i++) {
 			kfree(msm895x_aux_dev[i].codec_name);
@@ -1406,7 +1399,6 @@ void msm895x_free_auxdev_mem(struct platform_device *pdev)
 {
 	struct snd_soc_card *card = platform_get_drvdata(pdev);
 	int i;
-	pr_debug("At %d In (%s)\n",__LINE__, __FUNCTION__);
 
 	if (card->num_aux_devs > 0) {
 		for (i = 0; i < card->num_aux_devs; i++) {
