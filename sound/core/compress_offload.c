@@ -507,7 +507,7 @@ static int snd_compress_check_input(struct snd_compr_params *params)
 {
 	/* first let's check the buffer parameter's */
 	if (params->buffer.fragment_size == 0 ||
-			params->buffer.fragments > U32_MAX / params->buffer.fragment_size)
+	    params->buffer.fragments > U32_MAX / params->buffer.fragment_size)
 		return -EINVAL;
 
 	/* now codec parameters */
@@ -806,11 +806,11 @@ static int snd_compress_simple_ioctls(struct file *file,
 	case _IOC_NR(SNDRV_COMPRESS_GET_CAPS):
 		retval = snd_compr_get_caps(stream, arg);
 		break;
-
+#ifndef COMPR_CODEC_CAPS_OVERFLOW
 	case _IOC_NR(SNDRV_COMPRESS_GET_CODEC_CAPS):
 		retval = snd_compr_get_codec_caps(stream, arg);
 		break;
-
+#endif
 
 	case _IOC_NR(SNDRV_COMPRESS_TSTAMP):
 		retval = snd_compr_tstamp(stream, arg);
