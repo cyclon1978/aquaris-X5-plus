@@ -125,7 +125,7 @@ static irqreturn_t nqx_dev_irq_handler(int irq, void *dev_id)
 		(nqx_dev->client->dev.power.is_suspended == true)) {
 		pm_wakeup_event(&nqx_dev->client->dev, WAKEUP_SRC_TIMEOUT);
 	}
-	ret = gpio_get_value_cansleep(nqx_dev->irq_gpio);
+	ret = gpio_get_value(nqx_dev->irq_gpio);
 	if (!ret) {
 #ifdef NFC_KERNEL_BU
 		dev_info(&nqx_dev->client->dev,
