@@ -2358,7 +2358,6 @@ static int __q6asm_open_write(struct audio_client *ac, uint32_t format,
 			      bool is_gapless_mode, bool use_v3_format)
 {
 	int rc = 0x00;
-
 	struct asm_stream_cmd_open_write_v3 open;
 
 	if (ac == NULL) {
