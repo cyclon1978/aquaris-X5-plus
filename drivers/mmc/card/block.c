@@ -4232,8 +4232,6 @@ static int mmc_blk_probe(struct mmc_card *card)
 
 #ifdef CONFIG_MMC_BLOCK_DEFERRED_RESUME
 	mmc_set_bus_resume_policy(card->host, 1);
-	pr_debug("%s: enabling deferred resume !!!\n",
-			mmc_hostname(card->host));
 #endif
 	if (mmc_add_disk(md))
 		goto out;
