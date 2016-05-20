@@ -67,7 +67,8 @@ static const size_t max_zpage_size = PAGE_SIZE / 10 * 9;
 enum zram_pageflags {
 	/* Page consists entirely of zeros */
 	ZRAM_ZERO = ZRAM_FLAG_SHIFT,
-        ZRAM_ACCESS,    /* page is now accessed */
+	ZRAM_ACCESS,	/* page is now accessed */
+
 	__NR_ZRAM_PAGEFLAGS,
 };
 
@@ -98,28 +99,26 @@ struct zram_meta {
 	struct zs_pool *mem_pool;
 };
 
-
 struct zram {
 	struct zram_meta *meta;
 	struct zcomp *comp;
 	struct gendisk *disk;
-
 	/* Prevent concurrent execution of device init */
 	struct rw_semaphore init_lock;
 	/*
 	 * the number of pages zram can consume for storing compressed data
 	 */
 	unsigned long limit_pages;
-	int max_comp_streams;
+
 	struct zram_stats stats;
 	atomic_t refcount; /* refcount for zram_meta */
-        /* wait all IO under all of cpu are done */
-        wait_queue_head_t io_done;
+	/* wait all IO under all of cpu are done */
+	wait_queue_head_t io_done;
 	/*
 	 * This is the limit on amount of *uncompressed* worth of data
-         * we can store in a disk.
+	 * we can store in a disk.
 	 */
-	u64 disksize;   /* bytes */
+	u64 disksize;	/* bytes */
 	char compressor[10];
 };
 #endif
