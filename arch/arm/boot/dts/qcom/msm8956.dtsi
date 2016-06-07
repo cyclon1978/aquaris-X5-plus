@@ -396,6 +396,7 @@
 	};
 
 	cpubw: qcom,cpubw {
+		label = "cpubw";
 		compatible = "qcom,devbw";
 		governor = "cpufreq";
 		qcom,src-dst-ports = <1 512>;
@@ -413,6 +414,7 @@
 	};
 
 	mincpubw: qcom,mincpubw {
+		label = "mincpubw";
 		compatible = "qcom,devbw";
 		governor = "cpufreq";
 		qcom,src-dst-ports = <1 512>;
