@@ -92,3 +92,4 @@ obj-$(CONFIG_TRACER_PKT) += tracer_pkt.o
 obj-$(CONFIG_MSM_VSENS) += vsens.o
 obj-$(CONFIG_STATE_NOTIFIER)		+= state_notifier.o
 obj-$(CONFIG_AUTOSMP)			+= autosmp.o
+obj-$(CONFIG_MSM_HOTPLUG) += msm_hotplug.o
