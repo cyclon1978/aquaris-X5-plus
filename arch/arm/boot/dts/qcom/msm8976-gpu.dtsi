@@ -230,6 +230,8 @@
 		qcom,gpu-speed-config@1 {
 			compatible = "gpu-speed-config@1";
 
+			qcom,initial-pwrlevel = <8>;
+
 			/* Power levels */
 			qcom,gpu-pwrlevels {
 				#address-cells = <1>;
@@ -318,7 +320,7 @@
 					qcom,bus-max = <3>;
   	 			};
 
-			qcom,gpu-pwrlevel@9 {
+				qcom,gpu-pwrlevel@9 {
 					reg = <9>;
 					qcom,gpu-freq = <19200000>;
 					qcom,bus-freq = <0>;
