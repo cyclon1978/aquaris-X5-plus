@@ -4,7 +4,7 @@
  *
  * Copyright (C) 2012 Miguel Boton <mboton@gmail.com>
  *           (C) 2013, 2014 Boy Petersen <boypetersen@gmail.com>
- *
+ *.              2015 Linux 3.10 compatibility by Matthew Alex <matthewalex@outlook.com>
  *
  * This algorithm does not do any kind of sorting, as it is aimed for
  * aleatory access devices, but it does some basic merging. We try to
@@ -21,7 +21,6 @@
 #include <linux/bio.h>
 #include <linux/module.h>
 #include <linux/init.h>
-#include <linux/version.h>
 #include <linux/slab.h>
 
 enum { ASYNC, SYNC };
@@ -34,7 +33,7 @@ static const int async_read_expire = (HZ / 2);	/* ditto for async, these limits 
 static const int async_write_expire = (HZ * 2);	/* ditto for async, these limits are SOFT! */
 
 static const int writes_starved = 1;		/* max times reads can starve a write */
-static const int fifo_batch     = 3;		/* # of sequential requests treated as one
+static const int fifo_batch     = 16;		/* # of sequential requests treated as one
 						   by the above parameters. For throughput. */
 
 /* Elevator data */
@@ -86,7 +85,6 @@ sio_add_request(struct request_queue *q, struct request *rq)
 	list_add_tail(&rq->queuelist, &sd->fifo_list[sync][data_dir]);
 }
 
-#if LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,38)
 static int
 sio_queue_empty(struct request_queue *q)
 {
@@ -96,7 +94,6 @@ sio_queue_empty(struct request_queue *q)
 	return list_empty(&sd->fifo_list[SYNC][READ]) && list_empty(&sd->fifo_list[SYNC][WRITE]) &&
 	       list_empty(&sd->fifo_list[ASYNC][READ]) && list_empty(&sd->fifo_list[ASYNC][WRITE]);
 }
-#endif
 
 static struct request *
 sio_expired_request(struct sio_data *sd, int sync, int data_dir)
@@ -259,16 +256,20 @@ static int sio_init_queue(struct request_queue *q, struct elevator_type *e)
 	struct elevator_queue *eq;
 
 	eq = elevator_alloc(q, e);
-	if (!eq)
+	if (eq == NULL)
 		return -ENOMEM;
 
 	/* Allocate structure */
 	sd = kmalloc_node(sizeof(*sd), GFP_KERNEL, q->node);
-	if (!sd) {
+	if (sd == NULL) {
 		kobject_put(&eq->kobj);
 		return -ENOMEM;
 	}
 	eq->elevator_data = sd;
+
+	spin_lock_irq(q->queue_lock);
+	q->elevator = eq;
+	spin_unlock_irq(q->queue_lock);
 
 	/* Initialize fifo lists */
 	INIT_LIST_HEAD(&sd->fifo_list[SYNC][READ]);
@@ -283,11 +284,6 @@ static int sio_init_queue(struct request_queue *q, struct elevator_type *e)
 	sd->fifo_expire[ASYNC][READ] = async_read_expire;
 	sd->fifo_expire[ASYNC][WRITE] = async_write_expire;
 	sd->fifo_batch = fifo_batch;
-	sd->writes_starved = writes_starved;
-
-	spin_lock_irq(q->queue_lock);
-	q->elevator = eq;
-	spin_unlock_irq(q->queue_lock);
 
 	return 0;
 }
@@ -385,9 +381,7 @@ static struct elevator_type iosched_sioplus = {
 		.elevator_merge_req_fn		= sio_merged_requests,
 		.elevator_dispatch_fn		= sio_dispatch_requests,
 		.elevator_add_req_fn		= sio_add_request,
-#if LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,38)
 		.elevator_queue_empty_fn	= sio_queue_empty,
-#endif
 		.elevator_former_req_fn		= sio_former_request,
 		.elevator_latter_req_fn		= sio_latter_request,
 		.elevator_init_fn		= sio_init_queue,
