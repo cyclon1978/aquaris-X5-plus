@@ -105,7 +105,10 @@ static const int lookupVfloatFor[101] =
 	4380, //  99 ->   ?
 	4400, // 100 -> 100% validated
 };
+#endif
 
+#ifdef CONFIG_FORCE_FAST_CHARGE
+#include <linux/fastcharge.h>
 #endif
 
 /* Mask/Bit helpers */
@@ -1733,7 +1736,7 @@ static int smbchg_set_usb_current_max(struct smbchg_chip *chip,
 			}
 			chip->usb_max_current_ma = 500;
 		}
-		if ((current_ma == CURRENT_500_MA) || (current_ma == CURRENT_900_MA)) {	// AP: Fast charge for USB
+		if (current_ma == CURRENT_900_MA) {
 			rc = smbchg_sec_masked_write(chip,
 					chip->usb_chgpth_base + CHGPTH_CFG,
 					CFG_USB_2_3_SEL_BIT, CFG_USB_3);
@@ -5830,6 +5833,11 @@ static void smbchg_external_power_changed(struct power_supply *psy)
 
 	if (usb_supply_type != POWER_SUPPLY_TYPE_USB)
 		goto  skip_current_for_non_sdp;
+
+#ifdef CONFIG_FORCE_FAST_CHARGE
+	if (force_fast_charge)
+		current_limit = 900;
+#endif
 
 	pr_smb(PR_MISC, "usb type = %s current_limit = %d\n",
 			usb_type_name, current_limit);
