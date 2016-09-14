@@ -733,6 +733,10 @@ static int32_t msm_csid_cmd(struct csid_device *csid_dev, void __user *arg)
 		}
 		csid_dev->current_csid_params = csid_params;
 		csid_dev->csid_sof_debug = SOF_DEBUG_DISABLE;
+		if (rc < 0) {
+			pr_err("%s:%d failed\n", __func__, __LINE__);
+			break;
+		}
 		rc = msm_csid_config(csid_dev, &csid_params);
 MEM_CLEAN:
 		for (i--; i >= 0; i--)
