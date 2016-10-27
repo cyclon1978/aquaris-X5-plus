@@ -233,6 +233,7 @@ static int alg_setsockopt(struct socket *sock, int level, int optname,
 	lock_sock(sk);
 	if (ask->refcnt)
 		goto unlock;
+
 	type = ask->type;
 
 	err = -ENOPROTOOPT;
