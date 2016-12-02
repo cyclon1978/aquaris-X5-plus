@@ -40,6 +40,10 @@
 #include <linux/ktime.h>
 #include "pmic-voter.h"
 
+#ifdef CONFIG_BLX
+#include <linux/blx.h>
+#endif
+
 /* Mask/Bit helpers */
 #define _SMB_MASK(BITS, POS) \
 	((unsigned char)(((1 << (BITS)) - 1) << (POS)))
@@ -2895,6 +2899,7 @@ static int smbchg_float_voltage_comp_set(struct smbchg_chip *chip, int code)
 #define VFLOAT_CFG_REG			0xF4
 #define MIN_FLOAT_MV			3600
 #define MAX_FLOAT_MV			4500
+#define MAX_FLOAT_MV_BLX		4400
 #define VFLOAT_MASK			SMB_MASK(5, 0)
 
 #define MID_RANGE_FLOAT_MV_MIN		3600
@@ -2908,11 +2913,48 @@ static int smbchg_float_voltage_comp_set(struct smbchg_chip *chip, int code)
 #define VHIGH_RANGE_FLOAT_MIN_MV	4360
 #define VHIGH_RANGE_FLOAT_MIN_VAL	0x2C
 #define VHIGH_RANGE_FLOAT_STEP_MV	20
-static int smbchg_float_voltage_set(struct smbchg_chip *chip, int vfloat_mv)
+static int smbchg_float_voltage_set(struct smbchg_chip *chip, int vfloat_mv_original)
 {
 	struct power_supply *parallel_psy = get_parallel_psy(chip);
 	int rc, delta;
 	u8 temp;
+
+    int vfloat_mv = vfloat_mv_original;
+    
+#ifdef CONFIG_BLX
+    int vfloat_mv_blx;
+	int cap_level;
+
+	cap_level = get_cap_level();
+    vfloat_mv_blx = vfloat_mv_original;
+
+    if (vfloat_mv_original >= 3700 && vfloat_mv_original < 3980) {
+		vfloat_mv_blx = vfloat_mv_original - ( 3*cap_level);
+	} else
+    if (vfloat_mv_original >= 3980 && vfloat_mv_original < 4000) {
+		vfloat_mv_blx = vfloat_mv_original - (17*cap_level);
+	} else
+    if (vfloat_mv_original >= 4000 && vfloat_mv_original < 4080) {
+		vfloat_mv_blx = vfloat_mv_original - (18*cap_level);
+	} else
+    if (vfloat_mv_original >= 4080 && vfloat_mv_original < 4100) {
+		vfloat_mv_blx = vfloat_mv_original - (22*cap_level);
+	} else
+    if (vfloat_mv_original >= 4100 && vfloat_mv_original < 4220) {
+		vfloat_mv_blx = vfloat_mv_original - (23*cap_level);
+	} else
+    if (vfloat_mv_original >= 4220 && vfloat_mv_original < 4320) {
+		vfloat_mv_blx = vfloat_mv_original - (29*cap_level);
+	} else
+    if (vfloat_mv_original >= 4320) {
+		vfloat_mv_blx = vfloat_mv_original - (34*cap_level);
+	}     
+
+	pr_info("BLX setting vfloat voltage from %d to %d because cap_level is %d chip previous value was %d\n",
+			vfloat_mv_original, vfloat_mv_blx, cap_level, chip->vfloat_mv);
+			
+	vfloat_mv = vfloat_mv_blx;
+#endif   
 
 	if ((vfloat_mv < MIN_FLOAT_MV) || (vfloat_mv > MAX_FLOAT_MV)) {
 		dev_err(chip->dev, "bad float voltage mv =%d asked to set\n",
@@ -4572,6 +4614,14 @@ static void handle_usb_insertion(struct smbchg_chip *chip)
 	read_usb_type(chip, &usb_type_name, &usb_supply_type);
 	pr_smb(PR_STATUS,
 		"inserted type = %d (%s)", usb_supply_type, usb_type_name);
+		
+#ifdef CONFIG_BLX
+	pr_info("BLX chip->vfloat_mv is %d\n",
+			chip->vfloat_mv);
+
+    // we have 4400 as MAX_FLOAT_MV_BLX set because chip has it at value
+	smbchg_float_voltage_set(chip, MAX_FLOAT_MV_BLX);
+#endif		
 
 	smbchg_aicl_deglitch_wa_check(chip);
 	smbchg_change_usb_supply_type(chip, usb_supply_type);

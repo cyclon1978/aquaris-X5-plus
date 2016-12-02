@@ -655,4 +655,11 @@ source "drivers/misc/altera-stapl/Kconfig"
 source "drivers/misc/mei/Kconfig"
 source "drivers/misc/vmw_vmci/Kconfig"
 source "drivers/misc/qcom/Kconfig"
+
+config BLX
+	bool "Support for Battery Life eXtender"
+	default n
+	help
+	  Say Y here to enable Battery Life eXtender
+
 endmenu
