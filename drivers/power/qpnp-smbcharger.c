@@ -2928,6 +2928,7 @@ static int smbchg_float_voltage_set(struct smbchg_chip *chip, int vfloat_mv_orig
 	cap_level = get_cap_level();
     vfloat_mv_blx = vfloat_mv_original;
 
+/*
     if (vfloat_mv_original >= 3700 && vfloat_mv_original < 3980) {
 		vfloat_mv_blx = vfloat_mv_original - ( 3*cap_level);
 	} else
@@ -2948,7 +2949,10 @@ static int smbchg_float_voltage_set(struct smbchg_chip *chip, int vfloat_mv_orig
 	} else
     if (vfloat_mv_original >= 4320) {
 		vfloat_mv_blx = vfloat_mv_original - (34*cap_level);
-	}     
+	}
+*/
+
+	vfloat_mv_blx = vfloat_mv_original - (20*cap_level);
 
 	pr_info("BLX setting vfloat voltage from %d to %d because cap_level is %d chip previous value was %d\n",
 			vfloat_mv_original, vfloat_mv_blx, cap_level, chip->vfloat_mv);
