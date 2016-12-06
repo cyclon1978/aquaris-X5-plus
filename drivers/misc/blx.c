@@ -86,18 +86,18 @@ int get_cap_level(void)
 {
 	// 80 -> 100 mapping auf 10..0
 	if (charging_limit >= 80) {
-		int charging_cap_level = 10 - ((charging_limit-80) / 2);		
+		int charging_cap_level = 20 - (charging_limit-80);		
 
-	 	if (charging_cap_level >= 0 && charging_cap_level <= 10) {
+	 	if (charging_cap_level >= 0 && charging_cap_level <= 20) {
 		    pr_info("BLX charging cap level set to %u\n", charging_cap_level);
 			return charging_cap_level;
 		} else {
 		    pr_err("BLX charging cap level not set to %u\n", charging_cap_level);
 		}		
 	} else {
-		int charging_cap_level = 10;
+		int charging_cap_level = 20;
 
-	 	if (charging_cap_level >= 0 && charging_cap_level <= 10) {
+	 	if (charging_cap_level >= 0 && charging_cap_level <= 20) {
 		    pr_info("BLX charging cap level set to %u\n", charging_cap_level);
 			return charging_cap_level;
 		} else {

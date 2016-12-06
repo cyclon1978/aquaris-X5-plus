@@ -2899,7 +2899,10 @@ static int smbchg_float_voltage_comp_set(struct smbchg_chip *chip, int code)
 #define VFLOAT_CFG_REG			0xF4
 #define MIN_FLOAT_MV			3600
 #define MAX_FLOAT_MV			4500
-#define MAX_FLOAT_MV_BLX		4400
+
+// 4400 is device default, but this is really high... 4320 taken from oneplus3 kernel
+#define MAX_FLOAT_MV_BLX		4320
+
 #define VFLOAT_MASK			SMB_MASK(5, 0)
 
 #define MID_RANGE_FLOAT_MV_MIN		3600
@@ -2952,7 +2955,7 @@ static int smbchg_float_voltage_set(struct smbchg_chip *chip, int vfloat_mv_orig
 	}
 */
 
-	vfloat_mv_blx = vfloat_mv_original - (20*cap_level);
+	vfloat_mv_blx = vfloat_mv_original - (7*cap_level);
 
 	pr_info("BLX setting vfloat voltage from %d to %d because cap_level is %d chip previous value was %d\n",
 			vfloat_mv_original, vfloat_mv_blx, cap_level, chip->vfloat_mv);
