@@ -2901,7 +2901,7 @@ static int smbchg_float_voltage_comp_set(struct smbchg_chip *chip, int code)
 #define MAX_FLOAT_MV			4500
 
 // 4400 is device default, but this is really high... 4320 taken from oneplus3 kernel
-#define MAX_FLOAT_MV_BLX		4320
+#define MAX_FLOAT_MV_BLX		4400
 
 #define VFLOAT_MASK			SMB_MASK(5, 0)
 
@@ -2930,36 +2930,60 @@ static int smbchg_float_voltage_set(struct smbchg_chip *chip, int vfloat_mv_orig
 
 	cap_level = get_cap_level();
     vfloat_mv_blx = vfloat_mv_original;
-
-/*
-    if (vfloat_mv_original >= 3700 && vfloat_mv_original < 3980) {
-		vfloat_mv_blx = vfloat_mv_original - ( 3*cap_level);
-	} else
-    if (vfloat_mv_original >= 3980 && vfloat_mv_original < 4000) {
-		vfloat_mv_blx = vfloat_mv_original - (17*cap_level);
-	} else
-    if (vfloat_mv_original >= 4000 && vfloat_mv_original < 4080) {
-		vfloat_mv_blx = vfloat_mv_original - (18*cap_level);
-	} else
-    if (vfloat_mv_original >= 4080 && vfloat_mv_original < 4100) {
-		vfloat_mv_blx = vfloat_mv_original - (22*cap_level);
-	} else
-    if (vfloat_mv_original >= 4100 && vfloat_mv_original < 4220) {
-		vfloat_mv_blx = vfloat_mv_original - (23*cap_level);
-	} else
-    if (vfloat_mv_original >= 4220 && vfloat_mv_original < 4320) {
-		vfloat_mv_blx = vfloat_mv_original - (29*cap_level);
-	} else
-    if (vfloat_mv_original >= 4320) {
-		vfloat_mv_blx = vfloat_mv_original - (34*cap_level);
+    
+	if (cap_level == 0) {
+		vfloat_mv_blx = 4400; // 100% -> 100%
+	} else if (cap_level == 1) {
+		vfloat_mv_blx = 4380; //  99%
+	} else if (cap_level == 2) {
+		vfloat_mv_blx = 4360; //  98%
+	} else if (cap_level == 3) {
+		vfloat_mv_blx = 4350; //  97%
+	} else if (cap_level == 4) {
+		vfloat_mv_blx = 4340; //  96%
+	} else if (cap_level == 5) {
+		vfloat_mv_blx = 4340; //  95% ->  ?
+  	} else if (cap_level == 6) {
+		vfloat_mv_blx = 4320; //  94% ->  94%
+	} else if (cap_level == 7) {
+		vfloat_mv_blx = 4320; //  93% ->  94%
+	} else if (cap_level == 8) {
+		vfloat_mv_blx = 4300; //  92% ->  92%
+	} else if (cap_level == 9) {
+		vfloat_mv_blx = 4280; //  91% ->  91%
+	} else if (cap_level == 10) {
+		vfloat_mv_blx = 4280; //  90% ->  91%
+	} else if (cap_level == 11) {
+		vfloat_mv_blx = 4260; //  89% ->  89%
+	} else if (cap_level == 12) {
+		vfloat_mv_blx = 4260; //  88% ->  89%
+	} else if (cap_level == 13) {
+		vfloat_mv_blx = 4240; //  87% ->  87%
+	} else if (cap_level == 14) {
+		vfloat_mv_blx = 4220; //  86% ->  86%
+	} else if (cap_level == 15) {
+		vfloat_mv_blx = 4200; //  85%
+	} else if (cap_level == 16) {
+		vfloat_mv_blx = 4180; //  84%
+	} else if (cap_level == 17) {
+		vfloat_mv_blx = 4160; //  83%
+	} else if (cap_level == 18) {
+		vfloat_mv_blx = 4140; //  82%
+	} else if (cap_level == 19) {
+		vfloat_mv_blx = 4120; //  81%
+	} else if (cap_level == 20) {
+		vfloat_mv_blx = 4100; //  80%
 	}
-*/
-
-	vfloat_mv_blx = vfloat_mv_original - (7*cap_level);
-
-	pr_info("BLX setting vfloat voltage from %d to %d because cap_level is %d chip previous value was %d\n",
+	
+	if (vfloat_mv_blx > vfloat_mv_original) {
+		pr_info("BLX setting vfloat voltage not set from %d to %d because cap_level is %d chip previous value was %d - because it is higher than requested voltage.\n",
 			vfloat_mv_original, vfloat_mv_blx, cap_level, chip->vfloat_mv);
-			
+		vfloat_mv_blx = vfloat_mv_original;
+	} else {
+		pr_info("BLX setting vfloat voltage from %d to %d because cap_level is %d chip previous value was %d.\n",
+			vfloat_mv_original, vfloat_mv_blx, cap_level, chip->vfloat_mv);
+	}		
+		
 	vfloat_mv = vfloat_mv_blx;
 #endif   
 
@@ -2969,15 +2993,15 @@ static int smbchg_float_voltage_set(struct smbchg_chip *chip, int vfloat_mv_orig
 		return -EINVAL;
 	}
 
-	if (vfloat_mv <= HIGH_RANGE_FLOAT_MIN_MV) {
+	if (vfloat_mv <= HIGH_RANGE_FLOAT_MIN_MV) { // HIGH_RANGE_FLOAT_MIN_MV		4340
 		/* mid range */
-		delta = vfloat_mv - MID_RANGE_FLOAT_MV_MIN;
-		temp = MID_RANGE_FLOAT_MIN_VAL + delta
+		delta = vfloat_mv - MID_RANGE_FLOAT_MV_MIN; // 4227 - 3600 = X
+		temp = MID_RANGE_FLOAT_MIN_VAL + delta // 3600 + delta / STEP
 				/ MID_RANGE_FLOAT_STEP_MV;
 		vfloat_mv -= delta % MID_RANGE_FLOAT_STEP_MV;
-	} else if (vfloat_mv <= VHIGH_RANGE_FLOAT_MIN_MV) {
+	} else if (vfloat_mv <= VHIGH_RANGE_FLOAT_MIN_MV) { // VHIGH_RANGE_FLOAT_MIN_MV	4360
 		/* high range */
-		delta = vfloat_mv - HIGH_RANGE_FLOAT_MIN_MV;
+		delta = vfloat_mv - HIGH_RANGE_FLOAT_MIN_MV; // HIGH_RANGE_FLOAT_MIN_MV		4340
 		temp = HIGH_RANGE_FLOAT_MIN_VAL + delta
 				/ HIGH_RANGE_FLOAT_STEP_MV;
 		vfloat_mv -= delta % HIGH_RANGE_FLOAT_STEP_MV;
