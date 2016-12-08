@@ -2916,6 +2916,67 @@ static int smbchg_float_voltage_comp_set(struct smbchg_chip *chip, int code)
 #define VHIGH_RANGE_FLOAT_MIN_MV	4360
 #define VHIGH_RANGE_FLOAT_MIN_VAL	0x2C
 #define VHIGH_RANGE_FLOAT_STEP_MV	20
+
+static const int lookupVfloatFor[101] =
+{
+	// 0%
+	4100, // 75%
+	
+	//  1..10%
+	4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100, 
+	
+	// 11..20%
+	4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100, 
+	
+	// 21.. 30%
+	4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100, 
+	
+	// 31.. 40%
+	4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100, 
+	
+	// 41.. 50%
+	4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100, 
+	
+	// 51.. 60%
+	4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100, 
+	
+	// 61.. 70%
+	4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100, 
+	
+	// 71.. 80%
+	4100, 4100, 4100, 4100, // 75%
+	4100, //  75 ->  75%
+	4120, //  76 ->  77%
+	4120, //  77 ->  77%
+	4140, //  78 ->  78%
+	4160, //  79 ->  80%
+	4160, //  80 ->  80%
+	
+	// 81.. 90%
+	4180, //  81 ->  82%
+	4180, //  82 ->  82%
+	4200, //  83 ->  84%
+	4200, //  84 ->  84%
+	4220, //  85 ->  86%
+	4220, //  86 ->  86%
+	4240, //  87 ->  87%
+	4260, //  88 ->  89%
+	4260, //  89 ->  89%
+	4280, //  90 ->  91%
+	
+	// 91..100%
+	4280, //  91 ->  91%
+	4300, //  92 ->  92%
+	4320, //  93 ->  94%
+	4320, //  94 ->  94%
+	4340, //  95 ->   ?
+	4340, //  96 ->   ?
+	4350, //  97 ->   ?
+	4360, //  98 ->   ?
+	4380, //  99 ->   ?
+	4400, // 100 -> 100%
+};
+
 static int smbchg_float_voltage_set(struct smbchg_chip *chip, int vfloat_mv_original)
 {
 	struct power_supply *parallel_psy = get_parallel_psy(chip);
@@ -2925,66 +2986,24 @@ static int smbchg_float_voltage_set(struct smbchg_chip *chip, int vfloat_mv_orig
     int vfloat_mv = vfloat_mv_original;
     
 #ifdef CONFIG_BLX
-    int vfloat_mv_blx;
-	int cap_level;
-
-	cap_level = get_cap_level();
-    vfloat_mv_blx = vfloat_mv_original;
-    
-	if (cap_level == 0) {
-		vfloat_mv_blx = 4400; // 100% -> 100%
-	} else if (cap_level == 1) {
-		vfloat_mv_blx = 4380; //  99%
-	} else if (cap_level == 2) {
-		vfloat_mv_blx = 4360; //  98%
-	} else if (cap_level == 3) {
-		vfloat_mv_blx = 4350; //  97%
-	} else if (cap_level == 4) {
-		vfloat_mv_blx = 4340; //  96%
-	} else if (cap_level == 5) {
-		vfloat_mv_blx = 4340; //  95% ->  ?
-  	} else if (cap_level == 6) {
-		vfloat_mv_blx = 4320; //  94% ->  94%
-	} else if (cap_level == 7) {
-		vfloat_mv_blx = 4320; //  93% ->  94%
-	} else if (cap_level == 8) {
-		vfloat_mv_blx = 4300; //  92% ->  92%
-	} else if (cap_level == 9) {
-		vfloat_mv_blx = 4280; //  91% ->  91%
-	} else if (cap_level == 10) {
-		vfloat_mv_blx = 4280; //  90% ->  91%
-	} else if (cap_level == 11) {
-		vfloat_mv_blx = 4260; //  89% ->  89%
-	} else if (cap_level == 12) {
-		vfloat_mv_blx = 4260; //  88% ->  89%
-	} else if (cap_level == 13) {
-		vfloat_mv_blx = 4240; //  87% ->  87%
-	} else if (cap_level == 14) {
-		vfloat_mv_blx = 4220; //  86% ->  86%
-	} else if (cap_level == 15) {
-		vfloat_mv_blx = 4200; //  85%
-	} else if (cap_level == 16) {
-		vfloat_mv_blx = 4180; //  84%
-	} else if (cap_level == 17) {
-		vfloat_mv_blx = 4160; //  83%
-	} else if (cap_level == 18) {
-		vfloat_mv_blx = 4140; //  82%
-	} else if (cap_level == 19) {
-		vfloat_mv_blx = 4120; //  81%
-	} else if (cap_level == 20) {
-		vfloat_mv_blx = 4100; //  80%
-	}
+	int charging_limit = get_charginglimit();
 	
-	if (vfloat_mv_blx > vfloat_mv_original) {
-		pr_info("BLX setting vfloat voltage not set from %d to %d because cap_level is %d chip previous value was %d - because it is higher than requested voltage.\n",
-			vfloat_mv_original, vfloat_mv_blx, cap_level, chip->vfloat_mv);
-		vfloat_mv_blx = vfloat_mv_original;
-	} else {
-		pr_info("BLX setting vfloat voltage from %d to %d because cap_level is %d chip previous value was %d.\n",
-			vfloat_mv_original, vfloat_mv_blx, cap_level, chip->vfloat_mv);
-	}		
+	if (charging_limit >= 0 && charging_limit <= 100) {
+		int vfloat_mv_blx = lookupVfloatFor[charging_limit];
 		
-	vfloat_mv = vfloat_mv_blx;
+		if (vfloat_mv_blx > vfloat_mv_original) {
+			pr_info("BLX setting vfloat voltage not set from %d to %d because charging_limit is %d chip previous value was %d - because it is higher than requested voltage.\n",
+				vfloat_mv_original, vfloat_mv_blx, charging_limit, chip->vfloat_mv);
+		} else {
+			pr_info("BLX setting vfloat voltage from %d to %d because charging_limit is %d chip previous value was %d.\n",
+				vfloat_mv_original, vfloat_mv_blx, charging_limit, chip->vfloat_mv);
+			vfloat_mv = vfloat_mv_blx;
+		}		
+	} else {
+		pr_info("BLX setting vfloat voltage not set because charging_limit is %d and out of range.\n",
+			charging_limit);
+    }
+
 #endif   
 
 	if ((vfloat_mv < MIN_FLOAT_MV) || (vfloat_mv > MAX_FLOAT_MV)) {
