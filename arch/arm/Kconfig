@@ -2390,6 +2390,8 @@ source "fs/Kconfig"
 
 source "arch/arm/Kconfig.debug"
 
+source "arch/arm/hotplug/Kconfig"
+
 source "security/Kconfig"
 
 source "crypto/Kconfig"
