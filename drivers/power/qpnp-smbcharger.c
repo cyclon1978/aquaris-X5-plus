@@ -2953,9 +2953,9 @@ static const int lookupVfloatFor[101] =
 	4160, //  80 ->  80% validated
 	
 	// 81.. 90%
-	4180, //  81 ->  82% validating
-	4180, //  82 ->  82% validating
-	4200, //  83 ->   ?
+	4180, //  81 ->  83% validated
+	4180, //  82 ->  83% validated
+	4180, //  83 ->  83% validated
 	4200, //  84 ->   ?
 	4220, //  85 ->   ?
 	4220, //  86 ->   ?
