@@ -192,14 +192,6 @@ module_param(tx_unmute_delay, int,
 		S_IRUGO | S_IWUSR | S_IWGRP);
 MODULE_PARM_DESC(tx_unmute_delay, "delay to unmute the tx path");
 
-#if defined(CONFIG_SND_SOC_TPA6130A2)
-static int external_hph_control = 0;
-//extern struct msm8952_asoc_mach_data *pdata_hph_pa;
-extern void enable_tpa6130a2(void);
-extern void disable_tpa6130a2(void);
-extern int tpa6130a2_stereo_enable(struct snd_soc_codec *codec, int enable);
-#endif
-
 static struct afe_param_slimbus_slave_port_cfg tasha_slimbus_slave_port_cfg = {
 	.minor_version = 1,
 	.slimbus_dev_id = AFE_SLIMBUS_DEVICE_1,
@@ -3938,9 +3930,6 @@ static int tasha_codec_enable_hphl_pa(struct snd_soc_dapm_widget *w,
 					    WCD9335_CDC_RX1_RX_PATH_MIX_CTL,
 					    0x10, 0x00);
 		tasha_codec_override(codec, hph_mode, event);
-#if defined(CONFIG_SND_SOC_TPA6130A2)
-		enable_tpa6130a2();
-#endif
 		break;
 	case SND_SOC_DAPM_PRE_PMD:
 		blocking_notifier_call_chain(&tasha->notifier,
@@ -3955,9 +3944,6 @@ static int tasha_codec_enable_hphl_pa(struct snd_soc_dapm_widget *w,
 		 */
 		usleep_range(5000, 5500);
 		tasha_codec_override(codec, hph_mode, event);
-#if defined(CONFIG_SND_SOC_TPA6130A2)
-		disable_tpa6130a2();
-#endif
 		blocking_notifier_call_chain(&tasha->notifier,
 					WCD_EVENT_POST_HPHL_PA_OFF,
 					&tasha->mbhc);
@@ -8198,29 +8184,6 @@ static int tasha_int_dem_inp_mux_put(struct snd_kcontrol *kcontrol,
 	return snd_soc_dapm_put_enum_double(kcontrol, ucontrol);
 }
 
-#if defined(CONFIG_SND_SOC_TPA6130A2)
-static int get_external_hph_pa(struct snd_kcontrol *kcontrol,
-		       struct snd_ctl_elem_value *ucontrol)
-{
-	ucontrol->value.integer.value[0] = external_hph_control;
-	return 0;
-}
-
-static int set_external_hph_pa(struct snd_kcontrol *kcontrol,
-		       struct snd_ctl_elem_value *ucontrol)
-{
-	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
-	int ret =0;
-
-	if (external_hph_control == ucontrol->value.integer.value[0])
-		return 0;
-
-	external_hph_control = ucontrol->value.integer.value[0];
-
-	ret = tpa6130a2_stereo_enable(codec, external_hph_control);
-	return 1;
-}
-#endif
 static int tasha_ear_pa_gain_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
@@ -8537,15 +8500,6 @@ static int tasha_codec_aif4_mixer_switch_put(struct snd_kcontrol *kcontrol,
 	return 1;
 }
 
-#if defined(CONFIG_SND_SOC_TPA6130A2)
-static const char * const msm8952_external_hph_pa_text[] = {
-		"OFF", "ON"};
-
-static const struct soc_enum msm8952_external_hph_pa_enum[] = {
-		SOC_ENUM_SINGLE_EXT(2, msm8952_external_hph_pa_text),
-};
-#endif
-
 static const char * const tasha_ear_pa_gain_text[] = {
 	"G_6_DB", "G_4P5_DB", "G_3_DB", "G_1P5_DB",
 	"G_0_DB", "G_M2P5_DB", "UNDEFINED", "G_M12_DB"
@@ -8584,10 +8538,6 @@ static const struct snd_kcontrol_new tasha_analog_gain_controls[] = {
 			analog_gain),
 	SOC_SINGLE_TLV("ADC6 Volume", WCD9335_ANA_AMIC6, 0, 20, 0,
 			analog_gain),
-#if defined(CONFIG_SND_SOC_TPA6130A2)
-	SOC_ENUM_EXT("Headphone PA Open", msm8952_external_hph_pa_enum[0],
-		get_external_hph_pa, set_external_hph_pa),
-#endif
 };
 
 static const char * const spl_src0_mux_text[] = {
