@@ -194,8 +194,7 @@
 	pinctrl-names = "active", "sleep";
 	pinctrl-0 = <&sdc3_clk_on &sdc3_cmd_on &sdc3_dat_on
 					&sdc3_wlan_gpio_active>;
-	pinctrl-1 = <&sdc3_clk_off &sdc3_cmd_off &sdc3_dat_off
-					&sdc3_wlan_gpio_sleep>;
+	pinctrl-1 = <&sdc3_clk_off &sdc3_cmd_off &sdc3_dat_off>;
 
 	status = "disabled";
 };
@@ -232,10 +231,11 @@
 		    &qdsd_data0_spmi &qdsd_data3_spmi>;
 };
 
+/*
 &pm8950_cajon_dig {
 	status = "disabled";
 };
 
 &pm8950_cajon_analog {
 	status = "disabled";
-};
+};*/
