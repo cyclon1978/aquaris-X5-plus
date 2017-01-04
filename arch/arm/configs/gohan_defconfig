@@ -635,3 +635,9 @@ CONFIG_WLAN_FEATURE_11W=y
 CONFIG_QCOM_TDLS=y
 CONFIG_QCOM_VOWIFI_11R=y
 CONFIG_ENABLE_LINUX_REG=y
+
+# new governors
+CONFIG_CPU_FREQ_GOV_WHEATLEY=y
+
+# Enable cpu-boost driver that we need to make sure we ramp up CPU frequency on input activity
+CONFIG_CPU_BOOST=y
