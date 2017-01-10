@@ -646,7 +646,5 @@ CONFIG_CPU_BOOST=y
 # remove debug info...
 CONFIG_DEBUG_INFO=n
 
-# remove debug info... modules... why care?
-# CONFIG_INPUT_EVBUG is not set
-# CONFIG_MMC_TEST is not set
-# CONFIG_MMC_BLOCK_TEST is not set
+# enable cluster plug
+CONFIG_CLUSTER_PLUG=y
