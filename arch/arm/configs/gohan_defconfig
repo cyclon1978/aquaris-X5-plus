@@ -651,3 +651,13 @@ CONFIG_CLUSTER_PLUG=y
 
 # enable frandom
 CONFIG_FRANDOM=y
+
+# for exfat file system
+CONFIG_NLS_UTF8=y
+CONFIG_EXFAT_FS=y
+
+# for f2fs file system
+CONFIG_F2FS_FS=y
+CONFIG_F2FS_STAT_FS=y
+CONFIG_F2FS_FS_XATTR=y
+CONFIG_F2FS_FS_POSIX_ACL=y
