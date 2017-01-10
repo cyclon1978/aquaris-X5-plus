@@ -311,6 +311,7 @@ CONFIG_HW_RANDOM=y
 CONFIG_HW_RANDOM_MSM=y
 CONFIG_MSM_SMD_PKT=y
 CONFIG_MSM_ADSPRPC=y
+# CONFIG_MSM_RDBG is not set
 CONFIG_I2C=y
 CONFIG_I2C_CHARDEV=y
 CONFIG_I2C_MSM_V2=y
@@ -641,3 +642,11 @@ CONFIG_CPU_FREQ_GOV_WHEATLEY=y
 
 # Enable cpu-boost driver that we need to make sure we ramp up CPU frequency on input activity
 CONFIG_CPU_BOOST=y
+
+# remove debug info...
+CONFIG_DEBUG_INFO=n
+
+# remove debug info... modules... why care?
+# CONFIG_INPUT_EVBUG is not set
+# CONFIG_MMC_TEST is not set
+# CONFIG_MMC_BLOCK_TEST is not set
