@@ -644,7 +644,10 @@ CONFIG_CPU_FREQ_GOV_WHEATLEY=y
 CONFIG_CPU_BOOST=y
 
 # remove debug info...
-CONFIG_DEBUG_INFO=n
+CONFIG_DEBUG_INFO=y
 
 # enable cluster plug
 CONFIG_CLUSTER_PLUG=y
+
+# enable frandom
+CONFIG_FRANDOM=y
