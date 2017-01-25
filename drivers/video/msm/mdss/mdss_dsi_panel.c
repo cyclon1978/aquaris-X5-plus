@@ -635,7 +635,6 @@ static void mdss_dsi_panel_bl_ctrl(struct mdss_panel_data *pdata,
 {
 	struct mdss_dsi_ctrl_pdata *ctrl_pdata = NULL;
 	struct mdss_dsi_ctrl_pdata *sctrl = NULL;
-	//u32 temp;
 	static u32 old_bl_level=0;
 
 	if (pdata == NULL) {
@@ -712,8 +711,6 @@ static int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 #ifdef CONFIG_POWERSUSPEND
        set_power_suspend_state_panel_hook(POWER_SUSPEND_INACTIVE);
 #endif
-
-	display_on = true;
 
 	pinfo = &pdata->panel_info;
 	ctrl = container_of(pdata, struct mdss_dsi_ctrl_pdata,
@@ -823,7 +820,6 @@ static int mdss_dsi_panel_off(struct mdss_panel_data *pdata)
        set_power_suspend_state_panel_hook(POWER_SUSPEND_ACTIVE);
 #endif
 
-	display_on = false;
 end:
 	pr_debug("%s:-\n", __func__);
 	return 0;
