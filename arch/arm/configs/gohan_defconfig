@@ -588,8 +588,6 @@ CONFIG_HAVE_ARCH_SECCOMP_FILTER=y
 CONFIG_SECCOMP=y
 CONFIG_SECCOMP_FILTER=y
 CONFIG_MSM_PERFORMANCE=y
-CONFIG_MSM_CORE_CTL_HELPER=y
-CONFIG_MSM_CORE_CTL=y
 CONFIG_MSM_PERFORMANCE_HOTPLUG_ON=n
 CONFIG_QPNP_HAPTIC=y
 CONFIG_LEDS_QPNP_FLASH=y
@@ -612,21 +610,14 @@ CONFIG_HALL=y
 CONFIG_SND_SOC_TFA98XX=y
 CONFIG_LEDS_KTD2026=y
 
-CONFIG_POWER_SUPPLY_DEBUG=n
-CONFIG_BLX=y
 
-CONFIG_ALUCARD_HOTPLUG=y
+########################################################################
+# special features
+########################################################################
 
-# hima requires state notifier
-CONFIG_STATE_NOTIFIER=y
-CONFIG_HIMA_HOTPLUG=y
-
-# MDSS color control
-CONFIG_FB_MSM_MDSS_KCAL_CTRL=y
-
-#
+##
 # Qualcomm Atheros Prima WLAN module
-#
+##
 # CONFIG_PRIMA_WLAN is not set
 CONFIG_PRONTO_WLAN=m
 # CONFIG_PRIMA_WLAN_BTAMP is not set
@@ -638,21 +629,9 @@ CONFIG_QCOM_TDLS=y
 CONFIG_QCOM_VOWIFI_11R=y
 CONFIG_ENABLE_LINUX_REG=y
 
-# new governors
-CONFIG_CPU_FREQ_GOV_WHEATLEY=y
-
-# Enable cpu-boost driver that we need to make sure we ramp up CPU frequency on input activity
-CONFIG_CPU_BOOST=y
-
-# remove debug info...
-CONFIG_DEBUG_INFO=y
-
-# enable cluster plug
-CONFIG_CLUSTER_PLUG=y
-
-# enable frandom
-CONFIG_FRANDOM=y
-
+##
+# alternative file systems
+##
 # for exfat file system
 CONFIG_NLS_UTF8=y
 CONFIG_EXFAT_FS=y
@@ -666,7 +645,45 @@ CONFIG_F2FS_FS_POSIX_ACL=y
 CONFIG_F2FS_FS_SECURITY=y
 CONFIG_F2FS_FS_ENCRYPTION=y
 
-CONFIG_LOCALVERSION="-v4.013"
+##
+# hotplugs
+##
+
+# MSM core_ctl
+CONFIG_SCHED_CORE_CTL=y
+
+# alucard hotplug
+CONFIG_ALUCARD_HOTPLUG=y
+
+# hima requires state notifier
+CONFIG_STATE_NOTIFIER=y
+CONFIG_HIMA_HOTPLUG=y
+
+# enable cluster plug
+CONFIG_CLUSTER_PLUG=y
+
+
+CONFIG_POWER_SUPPLY_DEBUG=n
+
+# battery life extender
+CONFIG_BLX=y
+
+# MDSS color control
+CONFIG_FB_MSM_MDSS_KCAL_CTRL=y
+
+# new governors
+CONFIG_CPU_FREQ_GOV_WHEATLEY=y
+
+# Enable cpu-boost driver that we need to make sure we ramp up CPU frequency on input activity
+CONFIG_CPU_BOOST=y
+
+# remove debug info...
+CONFIG_DEBUG_INFO=y
+
+# enable frandom
+CONFIG_FRANDOM=y
+
+CONFIG_LOCALVERSION="-v4.020"
 
 # enable pstore
 CONFIG_PSTORE=y
@@ -675,4 +692,6 @@ CONFIG_PSTORE_LAST_KMSG=y
 # log everything to pstore
 CONFIG_PSTORE_CONSOLE=y
 
-
+# might interfere with msm cpu control and other hotplugs, so disable hotplug function only
+CONFIG_MSM_PERFORMANCE=y
+CONFIG_MSM_PERFORMANCE_HOTPLUG_ON=n
