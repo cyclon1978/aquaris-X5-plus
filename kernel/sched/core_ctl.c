@@ -1056,6 +1056,10 @@ static int group_init(struct cpumask *mask)
 		pr_err("HW configuration not supported\n");
 		return -EINVAL;
 	}
+
+    // startup with core_ctl disabled	
+	f->disabled = true;
+	
 	f->min_cpus = 1;
 	f->max_cpus = f->num_cpus;
 	f->need_cpus  = f->num_cpus;
