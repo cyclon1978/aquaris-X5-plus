@@ -662,9 +662,6 @@ CONFIG_HIMA_HOTPLUG=y
 # enable cluster plug
 CONFIG_CLUSTER_PLUG=y
 
-
-CONFIG_POWER_SUPPLY_DEBUG=n
-
 # battery life extender
 CONFIG_BLX=y
 
@@ -679,19 +676,42 @@ CONFIG_CPU_BOOST=y
 
 # remove debug info...
 CONFIG_DEBUG_INFO=y
+CONFIG_POWER_SUPPLY_DEBUG=n
 
 # enable frandom
 CONFIG_FRANDOM=y
 
-CONFIG_LOCALVERSION="-v4.020"
-
-# enable pstore
-CONFIG_PSTORE=y
-CONFIG_PSTORE_LAST_KMSG=y
-
-# log everything to pstore
-CONFIG_PSTORE_CONSOLE=y
-
 # might interfere with msm cpu control and other hotplugs, so disable hotplug function only
 CONFIG_MSM_PERFORMANCE=y
 CONFIG_MSM_PERFORMANCE_HOTPLUG_ON=n
+
+##############
+# super debug mode
+##############
+
+# enable pstore
+CONFIG_PSTORE=n
+CONFIG_PSTORE_LAST_KMSG=n
+# user messages in /sys/fs/pstore/pmsg-ramoops-[ID]
+CONFIG_PSTORE_PMSG=n
+CONFIG_PSTORE_RAM=n
+# log everything to pstore
+CONFIG_PSTORE_CONSOLE=n
+CONFIG_FTRACE=n
+CONFIG_FUNCTION_TRACER=n
+CONFIG_DEBUG_FS=n
+CONFIG_PSTORE_FTRACE=n
+# keep memory for restart: pstore will remain
+CONFIG_MSM_PRESERVE_MEM=n
+
+###
+# Scheduler
+###
+
+# bfq
+CONFIG_IOSCHED_BFQ=y
+CONFIG_CGROUP_BFQIO=y
+
+########################################################################
+
+CONFIG_LOCALVERSION="-v4.021"
