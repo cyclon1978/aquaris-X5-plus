@@ -699,6 +699,9 @@ static void core_ctl_timer_func(unsigned long cpu)
 
 static int core_ctl_online_core(unsigned int cpu)
 {
+		return cpu_up(cpu);
+/*
+	
 	int ret;
 	struct device *dev;
 
@@ -711,11 +714,13 @@ static int core_ctl_online_core(unsigned int cpu)
 		ret = device_online(dev);
 	}
 	unlock_device_hotplug();
-	return ret;
+	return ret;*/
 }
 
 static int core_ctl_offline_core(unsigned int cpu)
 {
+	return cpu_down(cpu);
+/*
 	int ret;
 	struct device *dev;
 
@@ -728,7 +733,7 @@ static int core_ctl_offline_core(unsigned int cpu)
 		ret = device_offline(dev);
 	}
 	unlock_device_hotplug();
-	return ret;
+	return ret;*/
 }
 
 static void update_lru(struct cpu_data *f)
