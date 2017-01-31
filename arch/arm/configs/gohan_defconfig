@@ -654,7 +654,7 @@ CONFIG_SDCARD_FS=y
 ##
 
 # MSM core_ctl
-CONFIG_SCHED_CORE_CTL=y
+CONFIG_SCHED_CORE_CTL=n
 
 # alucard hotplug
 CONFIG_ALUCARD_HOTPLUG=y
@@ -689,8 +689,10 @@ CONFIG_FRANDOM=y
 CONFIG_CPU_BOOST=y
 
 # might interfere with msm cpu control and other hotplugs, so disable hotplug function only
-CONFIG_MSM_PERFORMANCE=y
+# do we need it?
+CONFIG_MSM_PERFORMANCE=n
 CONFIG_MSM_PERFORMANCE_HOTPLUG_ON=n
+# try it...
 
 ##############
 # super debug mode
@@ -769,4 +771,4 @@ CONFIG_NET_SCH_PIE=y
 
 ########################################################################
 
-CONFIG_LOCALVERSION="-v4.022"
+CONFIG_LOCALVERSION="-v4.023"
