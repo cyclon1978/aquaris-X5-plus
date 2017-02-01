@@ -653,6 +653,9 @@ CONFIG_SDCARD_FS=y
 # hotplugs
 ##
 
+# 
+CONFIG_MSM_HOTPLUG=y
+
 # MSM core_ctl
 CONFIG_SCHED_CORE_CTL=n
 
@@ -692,7 +695,6 @@ CONFIG_CPU_BOOST=y
 # do we need it?
 CONFIG_MSM_PERFORMANCE=n
 CONFIG_MSM_PERFORMANCE_HOTPLUG_ON=n
-# try it...
 
 ##############
 # super debug mode
