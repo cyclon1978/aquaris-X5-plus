@@ -1426,6 +1426,9 @@ static struct device_attribute qpnp_hap_attrs[] = {
 	__ATTR(wf_update, (S_IRUGO | S_IWUSR | S_IWGRP),
 			qpnp_hap_wf_update_show,
 			qpnp_hap_wf_update_store),
+/*
+  do not remove: used by lib/libhardware_legacy.so
+*/
 	__ATTR(wf_update_now, (S_IRUGO | S_IWUSR | S_IWGRP),
 			NULL,
 			qpnp_hap_wf_update_now_store),
