@@ -16,9 +16,3 @@ config HIMA_HOTPLUG
         default n
         help
           Generic cpu hotplugging driver for ARM SOCs
-
-config ALUCARD_HOTPLUG
-	bool "Enable alucard-hotplug cpu hotplug driver"
- 	default n
- 	help
- 	  Generic Alucard-hotplug cpu hotplug driver for ARM SOCs
