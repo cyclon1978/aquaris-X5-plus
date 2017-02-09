@@ -22,6 +22,11 @@
 #include <linux/slab.h>
 #include <linux/input.h>
 #include <linux/cpufreq.h>
+#ifdef CONFIG_STATE_NOTIFIER
+#include <linux/state_notifier.h>
+#else
+#include <linux/fb.h>
+#endif
 
 #define CLUSTER_PLUG_MAJOR_VERSION	2
 #define CLUSTER_PLUG_MINOR_VERSION	0
@@ -34,7 +39,7 @@
 #define N_BIG_CPUS			4
 #define N_LITTLE_CPUS			4
 
-static DEFINE_MUTEX(cluster_plug_parameters_mutex);
+static DEFINE_MUTEX(cluster_plug_mutex);
 static struct delayed_work cluster_plug_work;
 static struct workqueue_struct *clusterplug_wq;
 
@@ -56,6 +61,9 @@ module_param(vote_threshold_up, uint, 0664);
 static ktime_t last_action;
 
 static bool active = false;
+static bool workqueue_suspended = true;
+
+static bool screen_on = true; // assumption: if notifiers dont work we prefer "normal" operation mode instead of "low power" mode
 static bool big_cluster_enabled = true;
 static bool little_cluster_enabled = true;
 static bool low_power_mode = false;
@@ -275,16 +283,157 @@ static void __ref cluster_plug_work_fn(struct work_struct *work)
 			enable_little_cluster();
 			disable_big_cluster();
 			/* Do not schedule more work */
+			mutex_lock(&cluster_plug_mutex);
+			workqueue_suspended = true;
+			mutex_unlock(&cluster_plug_mutex);
 			return;
 		}
 
+		if (screen_on) {
 		if (!low_power_mode && !big_cluster_enabled)
 			enable_big_cluster();
 
 		cluster_plug_perform();
+		} else {
+			enable_little_cluster();
+			disable_big_cluster();
+
+			/* Do not schedule more work */
+			mutex_lock(&cluster_plug_mutex);
+			workqueue_suspended = true;
+			mutex_unlock(&cluster_plug_mutex);
+			return;
+		}
 		queue_clusterplug_work(sampling_time);
 	}
 }
+static void __ref cluster_plug_hotplug_suspend(void)
+{
+	pr_info("cluster_plug: cluster_plug_hotplug_suspend called\n");
+	screen_on = false;
+	pr_info("cluster_plug: cluster_plug_hotplug_suspend finished\n");
+}
+
+static void __ref cluster_plug_hotplug_resume(void)
+{
+	pr_info("cluster_plug: cluster_plug_hotplug_resume called\n");
+	screen_on = true;
+
+	if (workqueue_suspended) {
+		// restart work queue
+
+		/* make the internal state match the actual state */
+		online_all = true;
+
+		mutex_lock(&cluster_plug_mutex);
+		workqueue_suspended = false;
+		mutex_unlock(&cluster_plug_mutex);
+
+		queue_clusterplug_work(1);
+	}
+
+ 	pr_info("cluster_plug: cluster_plug_hotplug_resume finished\n");
+}
+
+static struct notifier_block notif;
+static int notif_registered = 0;
+
+#ifdef CONFIG_STATE_NOTIFIER
+static int state_notifier_callback(struct notifier_block *this,
+				unsigned long event, void *data)
+{
+	if (!active)
+		return NOTIFY_OK;
+
+	switch (event) {
+		case STATE_NOTIFIER_ACTIVE:
+			cluster_plug_hotplug_resume();
+			break;
+		case STATE_NOTIFIER_SUSPEND:
+			cluster_plug_hotplug_suspend();
+			break;
+		default:
+			break;
+	}
+
+	return NOTIFY_OK;
+}
+
+static void register_state_notifier(void)
+{
+	pr_info("cluster_plug: register_state_notifier called.\n");
+	if (active && !low_power_mode) {
+		if (notif_registered == 1)
+			return;
+
+		notif.notifier_call = state_notifier_callback;
+		if (state_register_client(&notif)) {
+			pr_err("cluster_plug: Failed to register State notifier callback for cluster_plug Hotplug\n");
+		} else {
+			notif_registered = 1;
+			pr_info("cluster_plug: state_notifier callback registered\n");
+		}
+	} else {
+		if (notif_registered == 0)
+			return;
+
+		state_unregister_client(&notif);
+		notif.notifier_call = NULL;
+		notif_registered = 0;
+		pr_info("cluster_plug: state_notifier callback unregistered\n");
+	}
+}
+#else
+static int fb_notifier_callback(struct notifier_block *self,
+                unsigned long event, void *data)
+{
+    struct fb_event *evdata = data;
+    int *blank;
+
+	if (!active)
+		return NOTIFY_OK;
+
+    if (event == FB_EVENT_BLANK) {
+        blank = evdata->data;
+
+        switch (*blank) {
+        case FB_BLANK_UNBLANK:
+			cluster_plug_hotplug_resume();
+            break;
+        case FB_BLANK_POWERDOWN:
+			cluster_plug_hotplug_suspend();
+            break;
+        }
+    }
+
+    return NOTIFY_OK;
+}
+
+static void register_fb_notifier(void)
+{
+	pr_info("cluster_plug: register_fb_notifier called.\n");
+	if (active && !low_power_mode) {
+		if (notif_registered == 1)
+			return;
+
+		notif.notifier_call = fb_notifier_callback;
+    	if (fb_register_client(&notif)) {
+			pr_err("cluster_plug: Failed to register Fb notifier callback for cluster_plug Hotplug\n");
+		} else {
+			notif_registered = 1;
+			pr_info("cluster_plug: fb_notifier callback registered\n");
+		}
+	} else {
+		if (notif_registered == 0)
+			return;
+
+		fb_unregister_client(&notif);
+		notif.notifier_call = NULL;
+		notif_registered = 0;
+		pr_info("cluster_plug: fb_notifier callback unregistered\n");
+	}
+}
+#endif
 
 static int __ref active_show(char *buf,
 			const struct kernel_param *kp __attribute__ ((unused)))
@@ -299,7 +448,10 @@ static int __ref active_store(const char *buf,
 
 	ret = kstrtoint(buf, 0, &value);
 	if (ret == 0) {
-		mutex_lock(&cluster_plug_parameters_mutex);
+		if ((value != 0) == active)
+			return ret;
+		
+		mutex_lock(&cluster_plug_mutex);
 
 		cancel_delayed_work(&cluster_plug_work);
 		flush_workqueue(clusterplug_wq);
@@ -308,9 +460,16 @@ static int __ref active_store(const char *buf,
 
 		/* make the internal state match the actual state */
 		online_all = true;
+#ifdef CONFIG_STATE_NOTIFIER
+		register_state_notifier();
+#else
+		register_fb_notifier();
+#endif
+		
+		workqueue_suspended = false;
 		queue_clusterplug_work(1);
 
-		mutex_unlock(&cluster_plug_parameters_mutex);
+		mutex_unlock(&cluster_plug_mutex);
 	}
 
 	return ret;
@@ -336,15 +495,25 @@ static int __ref low_power_mode_store(const char *buf,
 
 	ret = kstrtoint(buf, 0, &value);
 	if (ret == 0) {
-		mutex_lock(&cluster_plug_parameters_mutex);
+		if ((value != 0) == low_power_mode)
+			return ret;
+		
+		mutex_lock(&cluster_plug_mutex);
 
 		cancel_delayed_work(&cluster_plug_work);
 		flush_workqueue(clusterplug_wq);
 
 		low_power_mode = (value != 0);
+#ifdef CONFIG_STATE_NOTIFIER
+		register_state_notifier();
+#else
+		register_fb_notifier();
+#endif
+
+		workqueue_suspended = false;
 		queue_clusterplug_work(1);
 
-		mutex_unlock(&cluster_plug_parameters_mutex);
+		mutex_unlock(&cluster_plug_mutex);
 	}
 
 	return ret;
@@ -365,9 +534,18 @@ int __init cluster_plug_init(void)
 
 	clusterplug_wq = alloc_workqueue("clusterplug",
 				WQ_HIGHPRI | WQ_UNBOUND, 1);
+#ifdef CONFIG_STATE_NOTIFIER
+	register_state_notifier();
+#else
+	register_fb_notifier();
+#endif
 	INIT_DELAYED_WORK(&cluster_plug_work, cluster_plug_work_fn);
 
 	return 0;
+}
+
+static void __exit cluster_plug_exit(void)
+{
 }
 
 MODULE_AUTHOR("Sultan Qasim Khan <sultanqasim@gmail.com> and Christopher R. Palmer <crpalmer@gmail.com>");
@@ -377,3 +555,4 @@ MODULE_DESCRIPTION("'cluster_plug' - A cluster based hotplug for homogeneous"
 MODULE_LICENSE("GPL");
 
 late_initcall(cluster_plug_init);
+module_exit(cluster_plug_exit);
