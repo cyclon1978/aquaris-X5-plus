@@ -90,10 +90,14 @@
 #include <linux/device.h>
 #include <linux/slab.h>
 #include <linux/cpufreq.h>
+#ifdef CONFIG_STATE_NOTIFIER
+#include <linux/state_notifier.h>
+#else
+#include <linux/fb.h>
+#endif
 #include <linux/mutex.h>
 #include <linux/math64.h>
 #include <linux/kernel_stat.h>
-#include <linux/fb.h>
 #include <linux/tick.h>
 #include <linux/hrtimer.h>
 #include <asm-generic/cputime.h>
@@ -132,8 +136,6 @@
 #define HOTPLUG_TIMEOUT                 2000
 
 unsigned int msm_enabled = HOTPLUG_ENABLED;
-
-struct notifier_block __refdata msm_hotplug_fb_notif;
 
 /* HACK: Prevent big cluster turned off when changing governor settings. */
 bool prevent_big_off = false;
@@ -496,7 +498,7 @@ static int get_lowest_load_cpu_big(void)
     return lowest_cpu;
 }
 
-static void big_up(void)
+static void __ref big_up(void)
 {
     int cpu;
 
@@ -536,7 +538,7 @@ static void big_up(void)
     }
 }
 
-static void big_down(void)
+static void __ref big_down(void)
 {
     int cpu, lowest_cpu;
 
@@ -637,7 +639,7 @@ static void big_updown(unsigned int fast_lane_req)
     }
 }
 
-static void little_up(void)
+static void __ref little_up(void)
 {
     int cpu;
 
@@ -730,7 +732,7 @@ static void reschedule_hotplug_work(void)
                   msecs_to_jiffies(hotplug.update_rate));
 }
 
-static void __cpuinit msm_hotplug_work(struct work_struct *work)
+static void __ref msm_hotplug_work(struct work_struct *work)
 {
     unsigned int i, target = 0, online_little;
 
@@ -832,7 +834,7 @@ reschedule:
     reschedule_hotplug_work();
 }
 
-static void __cpuinit msm_hotplug_suspend(void)
+static void msm_hotplug_suspend(void)
 {
     int online_cpus, online_cpus_big;
 
@@ -874,7 +876,7 @@ static void __cpuinit msm_hotplug_suspend(void)
     return;
 }
 
-static void __cpuinit msm_hotplug_resume(void)
+static void msm_hotplug_resume(void)
 {
     int required_reschedule = 0, required_wakeup = 0, online_cpus, online_cpus_big;
 
@@ -921,7 +923,7 @@ static void __cpuinit msm_hotplug_resume(void)
     return;
 }
 
-void __cpuinit msm_hotplug_resume_timeout(void)
+void msm_hotplug_resume_timeout(void)
 {
     if (timeout_enabled || !hotplug.suspended)
         return;
@@ -932,7 +934,57 @@ void __cpuinit msm_hotplug_resume_timeout(void)
 }
 EXPORT_SYMBOL(msm_hotplug_resume_timeout);
 
-static int __cpuinit msm_hotplug_start(int start_immediately)
+#ifdef CONFIG_STATE_NOTIFIER
+static int state_notifier_callback(struct notifier_block *this,
+				unsigned long event, void *data)
+{
+    	if (!msm_enabled)
+		return NOTIFY_OK;
+
+	switch (event) {
+		case STATE_NOTIFIER_ACTIVE:
+			msm_hotplug_resume();
+			break;
+		case STATE_NOTIFIER_SUSPEND:
+			msm_hotplug_suspend();
+			break;
+		default:
+			break;
+	}
+
+	return NOTIFY_OK;
+}
+#else
+static int fb_notifier_callback(struct notifier_block *self,
+                unsigned long event, void *data)
+{
+    struct fb_event *evdata = data;
+    int *blank;
+
+    if (!msm_enabled)
+		return NOTIFY_OK;
+
+    if (event == FB_EVENT_BLANK) {
+        blank = evdata->data;
+
+        switch (*blank) {
+        case FB_BLANK_UNBLANK:
+            msm_hotplug_scr_suspended = false;
+            msm_hotplug_resume();
+            break;
+        case FB_BLANK_POWERDOWN:
+            prevent_big_off = false;
+            msm_hotplug_scr_suspended = true;
+            msm_hotplug_suspend();
+            break;
+        }
+    }
+
+    return NOTIFY_OK;
+}
+#endif
+
+static int __ref msm_hotplug_start(int start_immediately)
 {
     int cpu, ret = 0;
     struct down_lock *dl;
@@ -945,6 +997,22 @@ static int __cpuinit msm_hotplug_start(int start_immediately)
         ret = -ENOMEM;
         goto err_out;
     }
+
+#ifdef CONFIG_STATE_NOTIFIER
+	hotplug.notif.notifier_call = state_notifier_callback;
+	if (state_register_client(&hotplug.notif)) {
+		pr_err("%s: Failed to register State notifier callback\n",
+			MSM_HOTPLUG);
+		goto err_dev;
+	}
+#else
+	hotplug.notif.notifier_call = fb_notifier_callback;
+    if (fb_register_client(&hotplug.notif)) {
+		pr_err("%s: Failed to register FB notifier callback\n",
+			MSM_HOTPLUG);
+		goto err_dev;
+    }
+#endif
 
     stats.load_hist = kmalloc(sizeof(stats.hist_size), GFP_KERNEL);
     if (!stats.load_hist) {
@@ -999,7 +1067,7 @@ err_out:
     return ret;
 }
 
-static void __cpuinit msm_hotplug_stop(void)
+static void __ref msm_hotplug_stop(void)
 {
     int cpu;
     struct down_lock *dl;
@@ -1015,6 +1083,11 @@ static void __cpuinit msm_hotplug_stop(void)
     mutex_destroy(&stats.stats_mutex);
     kfree(stats.load_hist);
 
+#ifdef CONFIG_STATE_NOTIFIER
+	state_unregister_client(&hotplug.notif);
+#else
+	fb_unregister_client(&hotplug.notif);
+#endif
     hotplug.notif.notifier_call = NULL;
 
     destroy_workqueue(hotplug_wq);
@@ -1050,7 +1123,7 @@ static ssize_t show_enable_hotplug(struct device *dev,
     return sprintf(buf, "%u\n", msm_enabled);
 }
 
-static ssize_t __cpuinit store_enable_hotplug(struct device *dev,
+static ssize_t store_enable_hotplug(struct device *dev,
                     struct device_attribute *msm_hotplug_attrs,
                     const char *buf, size_t count)
 {
@@ -1514,7 +1587,7 @@ static ssize_t show_version(struct device *dev,
     return sprintf(buf, "%s\n", MSM_HOTPLUG_VERSION);
 }
 
-static DEVICE_ATTR(msm_enabled_ops, (S_IWUGO|S_IRUGO), show_enable_hotplug, store_enable_hotplug);
+static DEVICE_ATTR(msm_enabled, (S_IWUGO|S_IRUGO), show_enable_hotplug, store_enable_hotplug);
 static DEVICE_ATTR(update_rate, (S_IWUGO|S_IRUGO), show_update_rate, store_update_rate);
 static DEVICE_ATTR(load_levels, (S_IWUGO|S_IRUGO), show_load_levels, store_load_levels);
 static DEVICE_ATTR(min_cpus_online, (S_IWUGO|S_IRUGO), show_min_cpus_online,
@@ -1545,7 +1618,7 @@ static DEVICE_ATTR(debug, (S_IWUGO|S_IRUGO), show_debug, store_debug);
 static DEVICE_ATTR(version, S_IRUGO, show_version, NULL);
 
 static struct attribute *msm_hotplug_attrs[] = {
-    &dev_attr_msm_enabled_ops.attr,
+    &dev_attr_msm_enabled.attr,
     &dev_attr_update_rate.attr,
     &dev_attr_load_levels.attr,
     &dev_attr_min_cpus_online.attr,
@@ -1573,7 +1646,7 @@ static struct attribute_group attr_group = {
 
 /************************** sysfs end ************************/
 
-static int __cpuinit msm_hotplug_probe(struct platform_device *pdev)
+static int msm_hotplug_probe(struct platform_device *pdev)
 {
     int ret = 0;
     struct kobject *module_kobj;
@@ -1607,7 +1680,7 @@ static struct platform_device msm_hotplug_device = {
     .id = -1,
 };
 
-static int __cpuinit msm_hotplug_remove(struct platform_device *pdev)
+static int msm_hotplug_remove(struct platform_device *pdev)
 {
     if (msm_enabled)
         msm_hotplug_stop();
@@ -1624,63 +1697,25 @@ static struct platform_driver msm_hotplug_driver = {
     },
 };
 
-static int __cpuinit msm_hotplug_fb_notifier_callback(struct notifier_block *self,
-                unsigned long event, void *data)
-{
-    struct fb_event *evdata = data;
-    int *blank;
-
-    if (!msm_enabled)
-        return 0;
-
-    if (event == FB_EVENT_BLANK) {
-        blank = evdata->data;
-
-        switch (*blank) {
-        case FB_BLANK_UNBLANK:
-            msm_hotplug_scr_suspended = false;
-            msm_hotplug_resume();
-            break;
-        case FB_BLANK_POWERDOWN:
-            prevent_big_off = false;
-            msm_hotplug_scr_suspended = true;
-            msm_hotplug_suspend();
-            break;
-        }
-    }
-
-    return 0;
-}
-
-struct notifier_block msm_hotplug_fb_notif = {
-    .notifier_call = msm_hotplug_fb_notifier_callback,
-};
-
 static int __init msm_hotplug_init(void)
 {
     int ret = false;
 
     if (stats.total_cpus + stats.total_cpus_big != NR_CPUS) {
-        pr_info("%s: Little cores and big cores are not match with this device: %d\n",
+        pr_err("%s: Little cores and big cores are not match with this device: %d\n",
                                         MSM_HOTPLUG, ret);
         return -EPERM;
     }
 
-    ret = fb_register_client(&msm_hotplug_fb_notif);
-    if (ret) {
-        pr_info("%s: FB register failed: %d\n", MSM_HOTPLUG, ret);
-        return ret;
-    }
-
     ret = platform_driver_register(&msm_hotplug_driver);
     if (ret) {
-        pr_info("%s: Driver register failed: %d\n", MSM_HOTPLUG, ret);
+        pr_err("%s: Driver register failed: %d\n", MSM_HOTPLUG, ret);
         return ret;
     }
 
     ret = platform_device_register(&msm_hotplug_device);
     if (ret) {
-        pr_info("%s: Device register failed: %d\n", MSM_HOTPLUG, ret);
+        pr_err("%s: Device register failed: %d\n", MSM_HOTPLUG, ret);
         return ret;
     }
 
@@ -1693,7 +1728,6 @@ static void __exit msm_hotplug_exit(void)
 {
     platform_device_unregister(&msm_hotplug_device);
     platform_driver_unregister(&msm_hotplug_driver);
-    fb_unregister_client(&msm_hotplug_fb_notif);
 }
 
 late_initcall(msm_hotplug_init);
