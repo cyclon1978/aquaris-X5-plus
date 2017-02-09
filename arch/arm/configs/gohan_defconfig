@@ -566,7 +566,7 @@ CONFIG_TIMER_STATS=y
 CONFIG_IPC_LOGGING=y
 # CONFIG_FTRACE is not set
 CONFIG_DYNAMIC_DEBUG=y
-CONFIG_DEBUG_USER=y
+# CONFIG_DEBUG_USER is not set
 CONFIG_DEBUG_SET_MODULE_RONX=y
 CONFIG_KEYS=y
 CONFIG_SECURITY=y
@@ -714,7 +714,8 @@ CONFIG_PSTORE_FTRACE=n
 CONFIG_MSM_PRESERVE_MEM=n
 # display debugging
 # CONFIG_FB_MSM_MDSS_XLOG_DEBUG is not set
-
+# enable to show more info about app crashes (additional info in kernel log)
+# CONFIG_DEBUG_USER is not set
 ###
 # Scheduler
 ###
@@ -774,5 +775,5 @@ CONFIG_HAS_MACH_MEMUTILS=y
 
 ########################################################################
 
-CONFIG_LOCALVERSION="-v4.025"
+CONFIG_LOCALVERSION="-v4.026"
 
