@@ -694,34 +694,32 @@ CONFIG_CPU_BOOST=y
 CONFIG_MSM_PERFORMANCE=n
 CONFIG_MSM_PERFORMANCE_HOTPLUG_ON=n
 
-##############
-# super debug mode
-##############
+##
+# enable display debugging
+##
 
-# enable pstore
-CONFIG_PSTORE=n
-CONFIG_PSTORE_LAST_KMSG=n
-# user messages in /sys/fs/pstore/pmsg-ramoops-[ID]
-CONFIG_PSTORE_PMSG=n
-CONFIG_PSTORE_RAM=n
-# log everything to pstore
-CONFIG_PSTORE_CONSOLE=n
-CONFIG_FTRACE=n
-CONFIG_FUNCTION_TRACER=n
-CONFIG_DEBUG_FS=n
-CONFIG_PSTORE_FTRACE=n
-# keep memory for restart: pstore will remain
-CONFIG_MSM_PRESERVE_MEM=n
-# display debugging
 # CONFIG_FB_MSM_MDSS_XLOG_DEBUG is not set
-# enable to show more info about app crashes (additional info in kernel log)
-# CONFIG_DEBUG_USER is not set
+
+###
+# enable pstore and ramoops log to pstore
+###
+
+CONFIG_PSTORE=y
+CONFIG_PSTORE_CONSOLE=y
+CONFIG_PSTORE_RAM=y
+CONFIG_PSTORE_RAM_ANNOTATION_APPEND=y
+CONFIG_PSTORE_LAST_KMSG=y
+
 ###
 # Scheduler
 ###
 
+CONFIG_DEFAULT_NOOP=y
+
 CONFIG_IOSCHED_FIOPS=y
+CONFIG_IOSCHED_SIO=y
 CONFIG_IOSCHED_SIOPLUS=y
+CONFIG_IOSCHED_ZEN=y
 
 # bfq
 CONFIG_IOSCHED_BFQ=y
@@ -775,5 +773,5 @@ CONFIG_HAS_MACH_MEMUTILS=y
 
 ########################################################################
 
-CONFIG_LOCALVERSION="-v4.026"
+CONFIG_LOCALVERSION="-v4.028"
 
