@@ -127,6 +127,15 @@
 			label = "adsp_mem";
 		};
 
+		/* 8DA00000..8DB00000 */
+		ramoops_mem: ramoops_mem_region {
+			linux,reserve-contiguous-region;
+			linux,reserve-region;
+			linux,remove-completely;
+			reg = <0x0 0x8da00000 0x0 0x00100000>;
+			label = "ramoops_mem";
+		};
+
 		/* 8DD00000..8F600000 */
 		tzapp_mem: tzapp_region@0 {
 			linux,reserve-contiguous-region;
@@ -2804,6 +2813,21 @@
 		qcom,irq-is-percpu;
 		interrupts = <1 7 0xff00>;
 	};
+	
+	ramoops {
+		compatible = "ramoops";
+		status = "ok";
+
+		android,ramoops-buffer-start = <0x8da00000>;
+		android,ramoops-buffer-size = <0x100000>;
+		android,ramoops-console-size = <0x50000>;
+		android,ramoops-record-size = <0x40000>;
+		android,ramoops-annotate-size = <0x1000>;
+		android,ramoops-dump-oops = <0x1>;
+
+		linux,contiguous-region = <&ramoops_mem>;
+    };
+
 };
 
 #include "msm-pm8950-rpm-regulator.dtsi"

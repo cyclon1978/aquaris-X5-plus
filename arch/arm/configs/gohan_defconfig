@@ -676,6 +676,16 @@ CONFIG_CLUSTER_PLUG=y
 # battery life extender
 CONFIG_BLX=y
 
+###
+# enable pstore and ramoops log to pstore
+###
+
+CONFIG_PSTORE=y
+CONFIG_PSTORE_CONSOLE=y
+CONFIG_PSTORE_RAM=y
+CONFIG_PSTORE_RAM_ANNOTATION_APPEND=y
+CONFIG_PSTORE_LAST_KMSG=y
+
 # Optimize trace point call sites
 CONFIG_JUMP_LABEL=y
 
