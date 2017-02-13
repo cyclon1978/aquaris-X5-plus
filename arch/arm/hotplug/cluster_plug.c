@@ -58,6 +58,9 @@ module_param(vote_threshold_down, uint, 0664);
 static unsigned int vote_threshold_up = DEF_VOTE_THRESHOLD;
 module_param(vote_threshold_up, uint, 0664);
 
+static unsigned int max_cores_screenoff = DEF_VOTE_THRESHOLD;
+module_param(max_cores_screenoff, uint, 0664);
+
 static ktime_t last_action;
 
 static bool active = false;
@@ -189,11 +192,26 @@ static void __ref enable_little_cluster(void)
 {
 	unsigned int cpu;
 	unsigned int num_up = 0;
+	unsigned int required_cpus = 4;
+	if (max_cores_screenoff > 0 && max_cores_screenoff <= 4)
+		required_cpus = max_cores_screenoff;
 
 	for_each_present_cpu(cpu) {
-		if (is_little_cpu(cpu) && !cpu_online(cpu)) {
-			cpu_up(cpu);
-			num_up++;
+		if (is_little_cpu(cpu)) {
+			// do we need more cpu's?
+			if (required_cpus > 0) {
+				// enable offline or count already online cpu
+				if (!cpu_online(cpu)) {
+					cpu_up(cpu);
+					num_up++;
+				}
+				required_cpus--;
+			} else {
+				// disable cpu if online
+				if (cpu_online(cpu)) {
+					cpu_down(cpu);
+				}
+			}
 		}
 	}
 
@@ -290,8 +308,8 @@ static void __ref cluster_plug_work_fn(struct work_struct *work)
 		}
 
 		if (screen_on) {
-		if (!low_power_mode && !big_cluster_enabled)
-			enable_big_cluster();
+			if (!low_power_mode && !big_cluster_enabled)
+				enable_big_cluster();
 
 			cluster_plug_perform();
 		} else {
