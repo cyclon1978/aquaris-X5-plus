@@ -236,7 +236,7 @@ static void cluster_plug_perform(void)
 
 	pr_debug("cluster-plug: loaded: %u unloaded: %u votes %d / %d\n",
 		loaded_cpus, unloaded_cpus, vote_up, vote_down);
-
+		
 	if (ktime_to_ms(ktime_sub(now, last_action)) > 5*sampling_time) {
 		pr_info("cluster_plug: ignoring old ts %lld\n",
 			ktime_to_ms(ktime_sub(now, last_action)));
@@ -293,7 +293,7 @@ static void __ref cluster_plug_work_fn(struct work_struct *work)
 		if (!low_power_mode && !big_cluster_enabled)
 			enable_big_cluster();
 
-		cluster_plug_perform();
+			cluster_plug_perform();
 		} else {
 			enable_little_cluster();
 			disable_big_cluster();
