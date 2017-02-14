@@ -28,7 +28,7 @@
 #include <linux/fb.h>
 #endif
 
-#define CLUSTER_PLUG_MAJOR_VERSION	2
+#define CLUSTER_PLUG_MAJOR_VERSION	3
 #define CLUSTER_PLUG_MINOR_VERSION	0
 
 #define DEF_LOAD_THRESH_DOWN		20
@@ -38,6 +38,10 @@
 
 #define N_BIG_CPUS			4
 #define N_LITTLE_CPUS			4
+
+// configure architecture and behavior of cluster_plug
+#define FIGHT_INTERFERENCE // ensure big cluster is enabled (avoid interference of kernel adiutor mod for example)
+#define LITTLE_BIG // two variants: big.LITTLE (cpu0=big) and LITTLE.big (cpu0=LITTLE)
 
 static DEFINE_MUTEX(cluster_plug_mutex);
 static struct delayed_work cluster_plug_work;
@@ -84,12 +88,20 @@ static DEFINE_PER_CPU(struct cp_cpu_info, cp_info);
 
 static bool is_big_cpu(unsigned int cpu)
 {
+#ifdef LITTLE_BIG
 	return cpu >= N_LITTLE_CPUS;
+#else
+	return cpu < N_BIG_CPUS;
+#endif
 }
 
 static bool is_little_cpu(unsigned int cpu)
 {
+#ifdef LITTLE_BIG
 	return cpu < N_LITTLE_CPUS;
+#else
+	return !is_big_cpu(cpu);
+#endif
 }
 
 static unsigned int get_delta_cpu_load_and_update(unsigned int cpu)
@@ -153,8 +165,10 @@ static void __ref enable_big_cluster(void)
 	unsigned int cpu;
 	unsigned int num_up = 0;
 
+#ifndef FIGHT_INTERFERENCE
 	if (big_cluster_enabled)
 		return;
+#endif
 
 	for_each_present_cpu(cpu) {
 		if (is_big_cpu(cpu) && !cpu_online(cpu)) {
@@ -193,8 +207,10 @@ static void __ref enable_little_cluster(void)
 	unsigned int cpu;
 	unsigned int num_up = 0;
 	unsigned int required_cpus = 4;
-	if (max_cores_screenoff > 0 && max_cores_screenoff <= 4)
-		required_cpus = max_cores_screenoff;
+	if (screen_on == false) {
+		if (max_cores_screenoff > 0 && max_cores_screenoff <= 4)
+			required_cpus = max_cores_screenoff;
+	}
 
 	for_each_present_cpu(cpu) {
 		if (is_little_cpu(cpu)) {
@@ -272,6 +288,9 @@ static void cluster_plug_perform(void)
 	}
 
 	if (vote_up > vote_threshold_up) {
+#ifdef FIGHT_INTERFERENCE
+		enable_big_cluster();
+#endif
 		enable_little_cluster();
 		vote_up = vote_threshold_up;
 		vote_down = 0;
