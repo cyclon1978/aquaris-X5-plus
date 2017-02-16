@@ -154,6 +154,7 @@ static int alg_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
 	struct sockaddr_alg *sa = (void *)uaddr;
 	const struct af_alg_type *type;
 	void *private;
+	int err;
 
 	if (sock->state == SS_CONNECTED)
 		return -EINVAL;
@@ -179,6 +180,7 @@ static int alg_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
 		return PTR_ERR(private);
 	}
 
+	err = -EBUSY;
 	lock_sock(sk);
 	if (ask->refcnt | ask->nokey_refcnt)
 		goto unlock;
@@ -186,11 +188,14 @@ static int alg_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
 	swap(ask->type, type);
 	swap(ask->private, private);
 
+	err = 0;
+
+unlock:
 	release_sock(sk);
 
 	alg_do_release(type, private);
 
-	return 0;
+	return err;
 }
 
 static int alg_setkey(struct sock *sk, char __user *ukey,
@@ -223,11 +228,14 @@ static int alg_setsockopt(struct socket *sock, int level, int optname,
 	struct sock *sk = sock->sk;
 	struct alg_sock *ask = alg_sk(sk);
 	const struct af_alg_type *type;
-	int err = -ENOPROTOOPT;
+	int err = -EBUSY;
 
 	lock_sock(sk);
+	if (ask->refcnt)
+		goto unlock;
 	type = ask->type;
 
+	err = -ENOPROTOOPT;
 	if (level != SOL_ALG || !type)
 		goto unlock;
 
