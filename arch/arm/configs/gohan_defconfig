@@ -773,5 +773,5 @@ CONFIG_HAS_MACH_MEMUTILS=y
 
 ########################################################################
 
-CONFIG_LOCALVERSION="-v4.028"
+CONFIG_LOCALVERSION="-v5.000"
 
