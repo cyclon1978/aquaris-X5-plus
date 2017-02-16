@@ -955,13 +955,6 @@ config TOUCHSCREEN_FT5X06_GESTURE
 
          If unsure, say N.
 
-source "drivers/input/touchscreen/synaptics_dsx/Kconfig"
-config TOUCHSCREEN_SYNAPTICS_DSX
-	tristate "Synaptics i2c touchscreen"
-	depends on I2C
-	help
-	  This enables support for Synaptics RMI over I2C based touchscreens.
-
 config TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE_EXTRA_SYSFS
 	bool "Synaptics DSX firmware update extra sysfs attributes"
 	depends on TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE
@@ -971,6 +964,13 @@ config TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE_EXTRA_SYSFS
 	  This does not affect the core or other subsystem attributes.
 
 	  If unsure, say N.
+
+source "drivers/input/touchscreen/synaptics_dsx/Kconfig"
+config TOUCHSCREEN_SYNAPTICS_DSX
+	tristate "Synaptics i2c touchscreen"
+	depends on I2C
+	help
+	  This enables support for Synaptics RMI over I2C based touchscreens.
 
 config TOUCHSCREEN_GEN_VKEYS
        tristate "Touchscreen Virtual Keys Driver"
