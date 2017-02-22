@@ -680,6 +680,9 @@ CONFIG_CPU_FREQ_GOV_WHEATLEY=y
 CONFIG_CPU_FREQ_GOV_BLU_ACTIVE=y
 CONFIG_CPU_FREQ_GOV_IMPULSE=y
 
+# gpu: adreno idler
+CONFIG_ADRENO_IDLER=y
+
 # remove debug info...
 CONFIG_DEBUG_INFO=y
 CONFIG_POWER_SUPPLY_DEBUG=n
@@ -773,5 +776,8 @@ CONFIG_HAS_MACH_MEMUTILS=y
 
 ########################################################################
 
-CONFIG_LOCALVERSION="-v5.000"
+CONFIG_LOCALVERSION="-v5.001"
+
+# Debugging
+CONFIG_DEBUG_DEVRES=n
 
