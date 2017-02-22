@@ -22,11 +22,17 @@
 #include <linux/slab.h>
 #include <linux/input.h>
 #include <linux/cpufreq.h>
-#ifdef CONFIG_STATE_NOTIFIER
-#include <linux/state_notifier.h>
+#define USE_LCD_NOTIFY
+#ifdef USE_LCD_NOTIFY
+#include <linux/lcd_notify.h>
 #else
+  #ifdef CONFIG_STATE_NOTIFIER
+#include <linux/state_notifier.h>
+  #else
 #include <linux/fb.h>
+  #endif
 #endif
+
 
 #define CLUSTER_PLUG_MAJOR_VERSION	3
 #define CLUSTER_PLUG_MINOR_VERSION	0
@@ -270,7 +276,7 @@ static void cluster_plug_perform(void)
 
 	pr_debug("cluster-plug: loaded: %u unloaded: %u votes %d / %d\n",
 		loaded_cpus, unloaded_cpus, vote_up, vote_down);
-		
+
 	if (ktime_to_ms(ktime_sub(now, last_action)) > 5*sampling_time) {
 		pr_info("cluster_plug: ignoring old ts %lld\n",
 			ktime_to_ms(ktime_sub(now, last_action)));
@@ -373,9 +379,46 @@ static void __ref cluster_plug_hotplug_resume(void)
 }
 
 static struct notifier_block notif;
-static int notif_registered = 0;
 
-#ifdef CONFIG_STATE_NOTIFIER
+#ifndef USE_LCD_NOTIFY
+static int notif_registered = 0;
+#endif
+
+#ifdef USE_LCD_NOTIFY
+static int lcd_notifier_callback(struct notifier_block *this,
+								unsigned long event, void *data)
+{
+	if (!active)
+		return NOTIFY_OK;
+
+	switch (event)
+	{
+		case LCD_EVENT_OFF_START:
+			//IDEA: mutex here? mutex_lock(&cluster_plug_mutex); remove from method
+			cluster_plug_hotplug_suspend();
+			//mutex_unlock(&cluster_plug_mutex);
+			break;
+
+		case LCD_EVENT_OFF_END:
+			break;
+
+		case LCD_EVENT_ON_START:
+			break;
+
+		case LCD_EVENT_ON_END:
+			//IDEA: mutex here? mutex_lock(&cluster_plug_mutex); remove from method
+			cluster_plug_hotplug_resume();
+			//mutex_unlock(&cluster_plug_mutex);
+			break;
+
+		default:
+			break;
+	}
+
+	return NOTIFY_OK;
+}
+#else
+  #ifdef CONFIG_STATE_NOTIFIER
 static int state_notifier_callback(struct notifier_block *this,
 				unsigned long event, void *data)
 {
@@ -420,7 +463,7 @@ static void register_state_notifier(void)
 		pr_info("cluster_plug: state_notifier callback unregistered\n");
 	}
 }
-#else
+  #else
 static int fb_notifier_callback(struct notifier_block *self,
                 unsigned long event, void *data)
 {
@@ -470,6 +513,7 @@ static void register_fb_notifier(void)
 		pr_info("cluster_plug: fb_notifier callback unregistered\n");
 	}
 }
+  #endif
 #endif
 
 static int __ref active_show(char *buf,
@@ -487,7 +531,7 @@ static int __ref active_store(const char *buf,
 	if (ret == 0) {
 		if ((value != 0) == active)
 			return ret;
-		
+
 		mutex_lock(&cluster_plug_mutex);
 
 		cancel_delayed_work(&cluster_plug_work);
@@ -497,10 +541,12 @@ static int __ref active_store(const char *buf,
 
 		/* make the internal state match the actual state */
 		online_all = true;
-#ifdef CONFIG_STATE_NOTIFIER
+#ifndef USE_LCD_NOTIFY
+  #ifdef CONFIG_STATE_NOTIFIER
 		register_state_notifier();
-#else
+  #else
 		register_fb_notifier();
+  #endif
 #endif
 		
 		workqueue_suspended = false;
@@ -541,10 +587,12 @@ static int __ref low_power_mode_store(const char *buf,
 		flush_workqueue(clusterplug_wq);
 
 		low_power_mode = (value != 0);
-#ifdef CONFIG_STATE_NOTIFIER
+#ifndef USE_LCD_NOTIFY
+  #ifdef CONFIG_STATE_NOTIFIER
 		register_state_notifier();
-#else
+  #else
 		register_fb_notifier();
+  #endif
 #endif
 
 		workqueue_suspended = false;
@@ -571,18 +619,36 @@ int __init cluster_plug_init(void)
 
 	clusterplug_wq = alloc_workqueue("clusterplug",
 				WQ_HIGHPRI | WQ_UNBOUND, 1);
-#ifdef CONFIG_STATE_NOTIFIER
-	register_state_notifier();
+
+#ifdef USE_LCD_NOTIFY
+	notif.notifier_call = lcd_notifier_callback;
+	if (lcd_register_client(&notif) != 0)
+	{
+		pr_err("%s: Failed to register lcd callback\n", __func__);
+		return -EFAULT;
+	}
 #else
+  #ifdef CONFIG_STATE_NOTIFIER
+	register_state_notifier();
+  #else
 	register_fb_notifier();
+  #endif
 #endif
+
 	INIT_DELAYED_WORK(&cluster_plug_work, cluster_plug_work_fn);
+
+	pr_info("%s cluster plug initialisation complete\n", __FUNCTION__);
 
 	return 0;
 }
 
 static void __exit cluster_plug_exit(void)
 {
+#ifdef USE_LCD_NOTIFY
+	lcd_unregister_client(&notif);
+#endif
+
+	pr_info("%s cluster_plug unregistration complete\n", __FUNCTION__);
 }
 
 MODULE_AUTHOR("Sultan Qasim Khan <sultanqasim@gmail.com> and Christopher R. Palmer <crpalmer@gmail.com>");
