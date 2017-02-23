@@ -22,32 +22,32 @@
 #include <linux/slab.h>
 #include <linux/input.h>
 #include <linux/cpufreq.h>
-#define USE_LCD_NOTIFY
-#ifdef USE_LCD_NOTIFY
 #include <linux/lcd_notify.h>
-#else
-  #ifdef CONFIG_STATE_NOTIFIER
-#include <linux/state_notifier.h>
-  #else
-#include <linux/fb.h>
-  #endif
-#endif
-
 
 #define CLUSTER_PLUG_MAJOR_VERSION	3
 #define CLUSTER_PLUG_MINOR_VERSION	0
 
-#define DEF_LOAD_THRESH_DOWN		20
+#define DEF_LOAD_THRESH_DOWN	20
 #define DEF_LOAD_THRESH_UP		80
 #define DEF_SAMPLING_MS			50
 #define DEF_VOTE_THRESHOLD		3
 
-#define N_BIG_CPUS			4
+#define N_BIG_CPUS				4
 #define N_LITTLE_CPUS			4
 
 // configure architecture and behavior of cluster_plug
 #define FIGHT_INTERFERENCE // ensure big cluster is enabled (avoid interference of kernel adiutor mod for example)
 #define LITTLE_BIG // two variants: big.LITTLE (cpu0=big) and LITTLE.big (cpu0=LITTLE)
+
+#if 0
+#define CLUSTER_PLUG_DEBUG
+#endif
+
+#ifdef CLUSTER_PLUG_DEBUG
+#define LOGD    pr_info
+#else
+#define LOGD(...)
+#endif /* CLUSTER_PLUG_DEBUG */
 
 static DEFINE_MUTEX(cluster_plug_mutex);
 static struct delayed_work cluster_plug_work;
@@ -76,7 +76,7 @@ static ktime_t last_action;
 static bool active = false;
 static bool workqueue_suspended = true;
 
-static bool screen_on = true; // assumption: if notifiers dont work we prefer "normal" operation mode instead of "low power" mode
+static bool screen_on = true;
 static bool big_cluster_enabled = true;
 static bool little_cluster_enabled = true;
 static bool low_power_mode = false;
@@ -183,7 +183,7 @@ static void __ref enable_big_cluster(void)
 		}
 	}
 
-	pr_info("cluster_plug: %d big cpus enabled\n", num_up);
+	LOGD("cluster_plug: %d big cpus enabled\n", num_up);
 
 	big_cluster_enabled = true;
 }
@@ -203,7 +203,7 @@ static void disable_big_cluster(void)
 		}
 	}
 
-	pr_info("cluster_plug: %d big cpus disabled\n", num_down);
+	LOGD("cluster_plug: %d big cpus disabled\n", num_down);
 
 	big_cluster_enabled = false;
 }
@@ -238,7 +238,7 @@ static void __ref enable_little_cluster(void)
 	}
 
 	if (!little_cluster_enabled)
-		pr_info("cluster_plug: %d little cpus enabled\n", num_up);
+		LOGD("cluster_plug: %d little cpus enabled\n", num_up);
 
 	little_cluster_enabled = true;
 }
@@ -258,7 +258,7 @@ static void disable_little_cluster(void)
 		}
 	}
 
-	pr_info("cluster_plug: %d little cpus disabled\n", num_down);
+	LOGD("cluster_plug: %d little cpus disabled\n", num_down);
 
 	little_cluster_enabled = false;
 }
@@ -274,11 +274,11 @@ static void cluster_plug_perform(void)
 	unsigned int unloaded_cpus = get_num_unloaded_little_cpus();
 	ktime_t now = ktime_get();
 
-	pr_debug("cluster-plug: loaded: %u unloaded: %u votes %d / %d\n",
+	LOGD("cluster-plug: loaded: %u unloaded: %u votes %d / %d\n",
 		loaded_cpus, unloaded_cpus, vote_up, vote_down);
 
 	if (ktime_to_ms(ktime_sub(now, last_action)) > 5*sampling_time) {
-		pr_info("cluster_plug: ignoring old ts %lld\n",
+		LOGD("cluster_plug: ignoring old ts %lld\n",
 			ktime_to_ms(ktime_sub(now, last_action)));
 		vote_up = vote_down = 0;
 	} else {
@@ -325,10 +325,12 @@ static void __ref cluster_plug_work_fn(struct work_struct *work)
 		if (low_power_mode) {
 			enable_little_cluster();
 			disable_big_cluster();
+
 			/* Do not schedule more work */
 			mutex_lock(&cluster_plug_mutex);
 			workqueue_suspended = true;
 			mutex_unlock(&cluster_plug_mutex);
+
 			return;
 		}
 
@@ -345,6 +347,7 @@ static void __ref cluster_plug_work_fn(struct work_struct *work)
 			mutex_lock(&cluster_plug_mutex);
 			workqueue_suspended = true;
 			mutex_unlock(&cluster_plug_mutex);
+
 			return;
 		}
 		queue_clusterplug_work(sampling_time);
@@ -352,14 +355,14 @@ static void __ref cluster_plug_work_fn(struct work_struct *work)
 }
 static void __ref cluster_plug_hotplug_suspend(void)
 {
-	pr_info("cluster_plug: cluster_plug_hotplug_suspend called\n");
+	LOGD("cluster_plug: cluster_plug_hotplug_suspend called\n");
 	screen_on = false;
-	pr_info("cluster_plug: cluster_plug_hotplug_suspend finished\n");
+	LOGD("cluster_plug: cluster_plug_hotplug_suspend finished\n");
 }
 
 static void __ref cluster_plug_hotplug_resume(void)
 {
-	pr_info("cluster_plug: cluster_plug_hotplug_resume called\n");
+	LOGD("cluster_plug: cluster_plug_hotplug_resume called\n");
 	screen_on = true;
 
 	if (workqueue_suspended) {
@@ -368,23 +371,16 @@ static void __ref cluster_plug_hotplug_resume(void)
 		/* make the internal state match the actual state */
 		online_all = true;
 
-		mutex_lock(&cluster_plug_mutex);
 		workqueue_suspended = false;
-		mutex_unlock(&cluster_plug_mutex);
 
 		queue_clusterplug_work(1);
 	}
 
- 	pr_info("cluster_plug: cluster_plug_hotplug_resume finished\n");
+ 	LOGD("cluster_plug: cluster_plug_hotplug_resume finished\n");
 }
 
 static struct notifier_block notif;
 
-#ifndef USE_LCD_NOTIFY
-static int notif_registered = 0;
-#endif
-
-#ifdef USE_LCD_NOTIFY
 static int lcd_notifier_callback(struct notifier_block *this,
 								unsigned long event, void *data)
 {
@@ -394,21 +390,25 @@ static int lcd_notifier_callback(struct notifier_block *this,
 	switch (event)
 	{
 		case LCD_EVENT_OFF_START:
-			//IDEA: mutex here? mutex_lock(&cluster_plug_mutex); remove from method
+			LOGD("cluster_plug: LCD_EVENT_OFF_START\n");
+			mutex_lock(&cluster_plug_mutex);
 			cluster_plug_hotplug_suspend();
-			//mutex_unlock(&cluster_plug_mutex);
+			mutex_unlock(&cluster_plug_mutex);
 			break;
 
 		case LCD_EVENT_OFF_END:
+			LOGD("cluster_plug: LCD_EVENT_OFF_END\n");
 			break;
 
 		case LCD_EVENT_ON_START:
+			LOGD("cluster_plug: LCD_EVENT_ON_START\n");
 			break;
 
 		case LCD_EVENT_ON_END:
-			//IDEA: mutex here? mutex_lock(&cluster_plug_mutex); remove from method
+			LOGD("cluster_plug: LCD_EVENT_ON_END\n");
+			mutex_lock(&cluster_plug_mutex);
 			cluster_plug_hotplug_resume();
-			//mutex_unlock(&cluster_plug_mutex);
+			mutex_unlock(&cluster_plug_mutex);
 			break;
 
 		default:
@@ -417,104 +417,6 @@ static int lcd_notifier_callback(struct notifier_block *this,
 
 	return NOTIFY_OK;
 }
-#else
-  #ifdef CONFIG_STATE_NOTIFIER
-static int state_notifier_callback(struct notifier_block *this,
-				unsigned long event, void *data)
-{
-	if (!active)
-		return NOTIFY_OK;
-
-	switch (event) {
-		case STATE_NOTIFIER_ACTIVE:
-			cluster_plug_hotplug_resume();
-			break;
-		case STATE_NOTIFIER_SUSPEND:
-			cluster_plug_hotplug_suspend();
-			break;
-		default:
-			break;
-	}
-
-	return NOTIFY_OK;
-}
-
-static void register_state_notifier(void)
-{
-	pr_info("cluster_plug: register_state_notifier called.\n");
-	if (active && !low_power_mode) {
-		if (notif_registered == 1)
-			return;
-
-		notif.notifier_call = state_notifier_callback;
-		if (state_register_client(&notif)) {
-			pr_err("cluster_plug: Failed to register State notifier callback for cluster_plug Hotplug\n");
-		} else {
-			notif_registered = 1;
-			pr_info("cluster_plug: state_notifier callback registered\n");
-		}
-	} else {
-		if (notif_registered == 0)
-			return;
-
-		state_unregister_client(&notif);
-		notif.notifier_call = NULL;
-		notif_registered = 0;
-		pr_info("cluster_plug: state_notifier callback unregistered\n");
-	}
-}
-  #else
-static int fb_notifier_callback(struct notifier_block *self,
-                unsigned long event, void *data)
-{
-    struct fb_event *evdata = data;
-    int *blank;
-
-	if (!active)
-		return NOTIFY_OK;
-
-    if (event == FB_EVENT_BLANK) {
-        blank = evdata->data;
-
-        switch (*blank) {
-        case FB_BLANK_UNBLANK:
-			cluster_plug_hotplug_resume();
-            break;
-        case FB_BLANK_POWERDOWN:
-			cluster_plug_hotplug_suspend();
-            break;
-        }
-    }
-
-    return NOTIFY_OK;
-}
-
-static void register_fb_notifier(void)
-{
-	pr_info("cluster_plug: register_fb_notifier called.\n");
-	if (active && !low_power_mode) {
-		if (notif_registered == 1)
-			return;
-
-		notif.notifier_call = fb_notifier_callback;
-    	if (fb_register_client(&notif)) {
-			pr_err("cluster_plug: Failed to register Fb notifier callback for cluster_plug Hotplug\n");
-		} else {
-			notif_registered = 1;
-			pr_info("cluster_plug: fb_notifier callback registered\n");
-		}
-	} else {
-		if (notif_registered == 0)
-			return;
-
-		fb_unregister_client(&notif);
-		notif.notifier_call = NULL;
-		notif_registered = 0;
-		pr_info("cluster_plug: fb_notifier callback unregistered\n");
-	}
-}
-  #endif
-#endif
 
 static int __ref active_show(char *buf,
 			const struct kernel_param *kp __attribute__ ((unused)))
@@ -534,21 +436,14 @@ static int __ref active_store(const char *buf,
 
 		mutex_lock(&cluster_plug_mutex);
 
-		cancel_delayed_work(&cluster_plug_work);
 		flush_workqueue(clusterplug_wq);
+		cancel_delayed_work(&cluster_plug_work);
 
 		active = (value != 0);
 
 		/* make the internal state match the actual state */
 		online_all = true;
-#ifndef USE_LCD_NOTIFY
-  #ifdef CONFIG_STATE_NOTIFIER
-		register_state_notifier();
-  #else
-		register_fb_notifier();
-  #endif
-#endif
-		
+
 		workqueue_suspended = false;
 		queue_clusterplug_work(1);
 
@@ -580,20 +475,13 @@ static int __ref low_power_mode_store(const char *buf,
 	if (ret == 0) {
 		if ((value != 0) == low_power_mode)
 			return ret;
-		
+
 		mutex_lock(&cluster_plug_mutex);
 
-		cancel_delayed_work(&cluster_plug_work);
 		flush_workqueue(clusterplug_wq);
+		cancel_delayed_work(&cluster_plug_work);
 
 		low_power_mode = (value != 0);
-#ifndef USE_LCD_NOTIFY
-  #ifdef CONFIG_STATE_NOTIFIER
-		register_state_notifier();
-  #else
-		register_fb_notifier();
-  #endif
-#endif
 
 		workqueue_suspended = false;
 		queue_clusterplug_work(1);
@@ -620,20 +508,15 @@ int __init cluster_plug_init(void)
 	clusterplug_wq = alloc_workqueue("clusterplug",
 				WQ_HIGHPRI | WQ_UNBOUND, 1);
 
-#ifdef USE_LCD_NOTIFY
 	notif.notifier_call = lcd_notifier_callback;
 	if (lcd_register_client(&notif) != 0)
 	{
 		pr_err("%s: Failed to register lcd callback\n", __func__);
+
+		destroy_workqueue(clusterplug_wq);
+
 		return -EFAULT;
 	}
-#else
-  #ifdef CONFIG_STATE_NOTIFIER
-	register_state_notifier();
-  #else
-	register_fb_notifier();
-  #endif
-#endif
 
 	INIT_DELAYED_WORK(&cluster_plug_work, cluster_plug_work_fn);
 
@@ -644,9 +527,12 @@ int __init cluster_plug_init(void)
 
 static void __exit cluster_plug_exit(void)
 {
-#ifdef USE_LCD_NOTIFY
+	flush_workqueue(clusterplug_wq);
+	cancel_delayed_work_sync(&cluster_plug_work);
+
 	lcd_unregister_client(&notif);
-#endif
+
+	destroy_workqueue(clusterplug_wq);
 
 	pr_info("%s cluster_plug unregistration complete\n", __FUNCTION__);
 }
