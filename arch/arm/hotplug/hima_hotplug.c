@@ -18,10 +18,7 @@
 #include <linux/slab.h>
 #include <linux/input.h>
 #include <linux/kobject.h>
-
-#ifdef CONFIG_STATE_NOTIFIER
-#include <linux/state_notifier.h>
-#endif
+#include <linux/lcd_notify.h>
 
 #include <linux/cpufreq.h>
 
@@ -223,18 +220,17 @@ static void __ref hima_hotplug_resume(void)
 		cpu_up(cpu);
 }
 
-#ifdef CONFIG_STATE_NOTIFIER
-static int state_notifier_callback(struct notifier_block *this,
-				unsigned long event, void *data)
+static int lcd_notifier_callback(struct notifier_block *this,
+								unsigned long event, void *data)
 {
 	if (atomic_read(&hima_hotplug_active) == 0)
 		return NOTIFY_OK;
 
 	switch (event) {
-		case STATE_NOTIFIER_ACTIVE:
+		case LCD_EVENT_ON_END:
 			hima_hotplug_resume();
 			break;
-		case STATE_NOTIFIER_SUSPEND:
+		case LCD_EVENT_OFF_START:
 			hima_hotplug_suspend();
 			break;
 		default:
@@ -243,7 +239,6 @@ static int state_notifier_callback(struct notifier_block *this,
 
 	return NOTIFY_OK;
 }
-#endif
 
 static int __ref hima_hotplug_start(void)
 {
@@ -257,14 +252,12 @@ static int __ref hima_hotplug_start(void)
 		goto err_out;
 	}
 
-#ifdef CONFIG_STATE_NOTIFIER
-	notif.notifier_call = state_notifier_callback;
-	if (state_register_client(&notif)) {
-		pr_err("%s: Failed to register State notifier callback\n",
+	notif.notifier_call = lcd_notifier_callback;
+	if (lcd_register_client(&notif)) {
+		pr_err("%s: Failed to register lcd notifier callback\n",
 			HIMA_HOTPLUG);
 		goto err_dev;
 	}
-#endif
 
 	INIT_WORK(&up_down_work, cpu_up_down_work);
 	INIT_DELAYED_WORK(&hima_hotplug_work, hima_hotplug_work_fn);
@@ -291,9 +284,7 @@ static void hima_hotplug_stop(void)
 	flush_workqueue(hima_hotplug_wq);
 	cancel_work_sync(&up_down_work);
 	cancel_delayed_work_sync(&hima_hotplug_work);
-#ifdef CONFIG_STATE_NOTIFIER
-	state_unregister_client(&notif);
-#endif
+	lcd_unregister_client(&notif);
 	destroy_workqueue(hima_hotplug_wq);
 }
 

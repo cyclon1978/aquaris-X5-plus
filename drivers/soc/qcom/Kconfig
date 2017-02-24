@@ -689,17 +689,6 @@ config MSM_VSENS
 
 	  Say yes to support these devices.
 
-config STATE_NOTIFIER
-        bool "State Notifier"
-	default n
-
-config AUTOSMP
-	bool "Multi-core automatic hotplug support"
-	depends on SMP && HOTPLUG_CPU
-	help
-	  Automatically hotplugs the multiple cpu cores on and off
-	  based on cpu load and suspend state
-
 config MSM_HOTPLUG
 	bool "MSM hotplug driver"
 	depends on HOTPLUG_CPU

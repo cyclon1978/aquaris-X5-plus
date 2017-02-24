@@ -9,13 +9,12 @@ config CLUSTER_PLUG
           This hotplug implementation always keeps the big cluster
           online, and only activates the little cluster for heavy
           parallel loads.
-          The mod version adds fb_notifier or state_notifier support
+          The mod version adds lcd_notifier usage support
           to go to a low power mode (only little clusters enabled)
           while the screen is suspended.
 
 config HIMA_HOTPLUG
         bool "Enable hima-hotplug cpu hotplug driver"
-	depends on STATE_NOTIFIER
         default n
         help
           Generic cpu hotplugging driver for ARM SOCs

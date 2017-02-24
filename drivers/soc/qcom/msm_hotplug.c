@@ -90,11 +90,7 @@
 #include <linux/device.h>
 #include <linux/slab.h>
 #include <linux/cpufreq.h>
-#ifdef CONFIG_STATE_NOTIFIER
-#include <linux/state_notifier.h>
-#else
-#include <linux/fb.h>
-#endif
+#include <linux/lcd_notify.h>
 #include <linux/mutex.h>
 #include <linux/math64.h>
 #include <linux/kernel_stat.h>
@@ -934,18 +930,17 @@ void msm_hotplug_resume_timeout(void)
 }
 EXPORT_SYMBOL(msm_hotplug_resume_timeout);
 
-#ifdef CONFIG_STATE_NOTIFIER
-static int state_notifier_callback(struct notifier_block *this,
-				unsigned long event, void *data)
+static int lcd_notifier_callback(struct notifier_block *this,
+								unsigned long event, void *data)
 {
     	if (!msm_enabled)
 		return NOTIFY_OK;
 
 	switch (event) {
-		case STATE_NOTIFIER_ACTIVE:
+		case LCD_EVENT_ON_END:
 			msm_hotplug_resume();
 			break;
-		case STATE_NOTIFIER_SUSPEND:
+		case LCD_EVENT_OFF_START:
 			msm_hotplug_suspend();
 			break;
 		default:
@@ -954,35 +949,6 @@ static int state_notifier_callback(struct notifier_block *this,
 
 	return NOTIFY_OK;
 }
-#else
-static int fb_notifier_callback(struct notifier_block *self,
-                unsigned long event, void *data)
-{
-    struct fb_event *evdata = data;
-    int *blank;
-
-    if (!msm_enabled)
-		return NOTIFY_OK;
-
-    if (event == FB_EVENT_BLANK) {
-        blank = evdata->data;
-
-        switch (*blank) {
-        case FB_BLANK_UNBLANK:
-            msm_hotplug_scr_suspended = false;
-            msm_hotplug_resume();
-            break;
-        case FB_BLANK_POWERDOWN:
-            prevent_big_off = false;
-            msm_hotplug_scr_suspended = true;
-            msm_hotplug_suspend();
-            break;
-        }
-    }
-
-    return NOTIFY_OK;
-}
-#endif
 
 static int __ref msm_hotplug_start(int start_immediately)
 {
@@ -998,21 +964,12 @@ static int __ref msm_hotplug_start(int start_immediately)
         goto err_out;
     }
 
-#ifdef CONFIG_STATE_NOTIFIER
-	hotplug.notif.notifier_call = state_notifier_callback;
-	if (state_register_client(&hotplug.notif)) {
-		pr_err("%s: Failed to register State notifier callback\n",
+	hotplug.notif.notifier_call = lcd_notifier_callback;
+	if (lcd_register_client(&hotplug.notif)) {
+		pr_err("%s: Failed to register lcd notifier callback\n",
 			MSM_HOTPLUG);
 		goto err_dev;
 	}
-#else
-	hotplug.notif.notifier_call = fb_notifier_callback;
-    if (fb_register_client(&hotplug.notif)) {
-		pr_err("%s: Failed to register FB notifier callback\n",
-			MSM_HOTPLUG);
-		goto err_dev;
-    }
-#endif
 
     stats.load_hist = kmalloc(sizeof(stats.hist_size), GFP_KERNEL);
     if (!stats.load_hist) {
@@ -1083,11 +1040,7 @@ static void __ref msm_hotplug_stop(void)
     mutex_destroy(&stats.stats_mutex);
     kfree(stats.load_hist);
 
-#ifdef CONFIG_STATE_NOTIFIER
-	state_unregister_client(&hotplug.notif);
-#else
-	fb_unregister_client(&hotplug.notif);
-#endif
+	lcd_unregister_client(&hotplug.notif);
     hotplug.notif.notifier_call = NULL;
 
     destroy_workqueue(hotplug_wq);
