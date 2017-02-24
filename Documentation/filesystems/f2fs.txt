@@ -162,10 +162,10 @@ mode=%s                Control block allocation mode which supports "adaptive"
 DEBUGFS ENTRIES
 ================================================================================
 
-/sys/debug/f2fs/ contains information about all the partitions mounted as
+/sys/kernel/debug/f2fs/ contains information about all the partitions mounted as
 f2fs. Each file shows the whole f2fs information.
 
-/sys/debug/f2fs/status includes:
+/sys/kernel/debug/f2fs/status includes:
  - major file system information managed by f2fs currently
  - average SIT information about whole segments
  - current memory footprint consumed by f2fs.
@@ -201,7 +201,6 @@ Format options
 -e [str]     : Set basic extension list. e.g. "mp3,gif,mov"
 -t [0 or 1]  : Disable discard command or not.
                1 is set by default, which conducts discard.
-
 
 ================================================================================
 DESIGN
