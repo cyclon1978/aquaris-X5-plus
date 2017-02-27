@@ -776,7 +776,7 @@ CONFIG_POWERSUSPEND=y
 
 ########################################################################
 
-CONFIG_LOCALVERSION="-v5.001"
+CONFIG_LOCALVERSION="-v5.002"
 
 # Debugging
 CONFIG_DEBUG_DEVRES=n
