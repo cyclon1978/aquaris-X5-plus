@@ -231,7 +231,7 @@ INT32 FsTruncateFile(struct inode *inode, UINT64 old_size, UINT64 new_size)
 
 	sm_P(&(fs_struct[p_fs->drv].v_sem));
 
-	LOGD("entered (inode %p size %llu)\n", inode, new_size);
+	LOGD("entered (inode %pK size %llu)\n", inode, new_size);
 
 	err = ffsTruncateFile(inode, old_size, new_size);
 
@@ -314,7 +314,7 @@ INT32 FsWriteStat(struct inode *inode, DIR_ENTRY_T *info)
 
 	sm_P(&(fs_struct[p_fs->drv].v_sem));
 
-	LOGD("entered (inode %p info %p\n", inode, info);
+	LOGD("entered (inode %pK info %pK\n", inode, info);
 
 	err = ffsSetStat(inode, info);
 

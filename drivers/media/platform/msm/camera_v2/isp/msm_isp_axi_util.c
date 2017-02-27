@@ -1280,7 +1280,7 @@ static void msm_isp_update_ping_pong_offset(struct vfe_device *vfe_dev,
 	if (pingpong_bit < 2)
 		buf = stream_info->buf[pingpong_bit];
 	pr_err("%s pingpong_status 0x%x wm %d streamid %x"
-		"pingpong_bit %d buf %p\n",
+		"pingpong_bit %d buf %pK\n",
 		__func__, pingpong_status, stream_info->wm[0],
 		stream_info->stream_id,
 		pingpong_bit, buf);
@@ -1299,7 +1299,7 @@ static void msm_isp_update_ping_pong_offset(struct vfe_device *vfe_dev,
 					output_scan_lines) - stream_info->
 					plane_cfg[j].plane_addr_offset;
 			}*/
-         pr_err("%s: VFE id %d paddr:0x%p plane_addr_offset:0x%x\n",__func__,vfe_dev->pdev->id,(void*)buf->mapped_info[j].paddr,stream_info->plane_cfg[j].plane_addr_offset);
+         pr_err("%s: VFE id %d paddr:0x%pK plane_addr_offset:0x%x\n",__func__,vfe_dev->pdev->id,(void*)buf->mapped_info[j].paddr,stream_info->plane_cfg[j].plane_addr_offset);
 
 			vfe_dev->hw_info->vfe_ops.axi_ops.update_ping_pong_addr(
 				vfe_dev->vfe_base, stream_info->wm[j],
@@ -1333,7 +1333,7 @@ static void msm_isp_reload_ping_pong_offset(struct vfe_device *vfe_dev,
 			pingpong_status =
 				vfe_dev->hw_info->vfe_ops.axi_ops.get_pingpong_status(vfe_dev);
 			pingpong_bit = (~(pingpong_status >> stream_info->wm[0]) & 0x1);
-		 pr_err("%s: VFE id %d stream_id 0x%x HW frame id:%d strem info frame id :%d HW ping_pong %d sw_ping_pong_bit  :%d  buf ping %d paddr:0x%p \n",__func__,vfe_dev->pdev->id,stream_info->stream_id,
+		 pr_err("%s: VFE id %d stream_id 0x%x HW frame id:%d strem info frame id :%d HW ping_pong %d sw_ping_pong_bit  :%d  buf ping %d paddr:0x%pK \n",__func__,vfe_dev->pdev->id,stream_info->stream_id,
 		 	vfe_dev->axi_data.src_info[VFE_PIX_0].frame_id,stream_info->frame_id,pingpong_bit,stream_info->sw_ping_pong_bit,bit,(void*)buf->mapped_info[j].paddr);
 				}
 		}

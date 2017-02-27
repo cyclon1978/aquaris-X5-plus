@@ -170,11 +170,11 @@ static void persistent_ram_ecc_old(struct persistent_ram_zone *prz)
 			size = buffer->data + prz->buffer_size - block;
 		numerr = persistent_ram_decode_rs8(prz, block, size, par);
 		if (numerr > 0) {
-			pr_devel("persistent_ram: error in block %p, %d\n",
+			pr_devel("persistent_ram: error in block %pK, %d\n",
 			       block, numerr);
 			prz->corrected_bytes += numerr;
 		} else if (numerr < 0) {
-			pr_devel("persistent_ram: uncorrectable error in block %p\n",
+			pr_devel("persistent_ram: uncorrectable error in block %pK\n",
 				block);
 			prz->bad_blocks++;
 		}
@@ -556,7 +556,7 @@ static int persistent_ram_buffer_map(phys_addr_t start, phys_addr_t size,
 
 	prz->buffer = prz->vaddr + offset_in_page(start);
 	prz->buffer_size = size - sizeof(struct persistent_ram_buffer);
-	pr_info("persistent_ram: paddr: %p, vaddr: %p, buf size = 0x%zx\n",
+	pr_info("persistent_ram: paddr: %pK, vaddr: %pK, buf size = 0x%zx\n",
 		(void *)prz->paddr, (void *)prz->vaddr, prz->buffer_size);
 
 	return 0;

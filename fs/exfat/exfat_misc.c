@@ -3109,7 +3109,7 @@ void update_dir_checksum_with_entry_set (struct super_block *sb, ENTRY_SET_CACHE
 
 	ep = (DENTRY_T *)&(es->__buf);
 	for (i=0; i < es->num_entries; i++) {
-		LOGD("ep %p\n", ep);
+		LOGD("ep %pK\n", ep);
 		chksum = calc_checksum_2byte((void *) ep, DENTRY_SIZE, chksum, chksum_type);
 		ep++;
 		chksum_type = CS_DEFAULT;
@@ -3355,12 +3355,12 @@ ENTRY_SET_CACHE_T *get_entry_set_in_dir (struct super_block *sb, CHAIN_T *p_dir,
 	if (file_ep)
 		*file_ep = (DENTRY_T *)&(es->__buf);
 
-	LOGD("es sec %u offset %d flags %d, num_entries %u buf ptr %p\n",
+	LOGD("es sec %u offset %d flags %d, num_entries %u buf ptr %pK\n",
 		   es->sector, es->offset, es->alloc_flag, es->num_entries, &(es->__buf));
-	LOGD("exited %p\n", es);
+	LOGD("exited %pK\n", es);
 	return es;
 err_out:
-	LOGD("exited NULL (es %p)\n", es);
+	LOGD("exited NULL (es %pK)\n", es);
 	if (es)
 		FREE(es);
 	return NULL;
@@ -3368,7 +3368,7 @@ err_out:
 
 void release_entry_set (ENTRY_SET_CACHE_T *es)
 {
-	LOGD("%p\n", es);
+	LOGD("%pK\n", es);
 	FREE(es);
 }
 
@@ -3383,7 +3383,7 @@ static INT32 __write_partial_entries_in_entry_set (struct super_block *sb, ENTRY
 	UINT8 *buf, *esbuf = (UINT8 *)&(es->__buf);
 
 	LOGD("entered\n");
-	LOGD("es %p sec %u off %d count %d\n", es, sec, off, count);
+	LOGD("es %pK sec %u off %d count %d\n", es, sec, off, count);
 	num_entries = count;
 
 	while(num_entries) {
@@ -3392,8 +3392,8 @@ static INT32 __write_partial_entries_in_entry_set (struct super_block *sb, ENTRY
 		buf = buf_getblk(sb, sec);
 		if (buf == NULL)
 			goto err_out;
-		LOGD("es->buf %p buf_off %u\n", esbuf, buf_off);
-		LOGD("copying %d entries from %p to sector %u\n", copy_entries, (esbuf + buf_off), sec);
+		LOGD("es->buf %pK buf_off %u\n", esbuf, buf_off);
+		LOGD("copying %d entries from %pK to sector %u\n", copy_entries, (esbuf + buf_off), sec);
 		MEMCPY(buf + off, esbuf + buf_off, copy_entries << DENTRY_SIZE_BITS);
 		buf_modify(sb, sec);
 		num_entries -= copy_entries;

@@ -340,7 +340,7 @@ void in6_dev_finish_destroy(struct inet6_dev *idev)
 #endif
 	dev_put(dev);
 	if (!idev->dead) {
-		pr_warn("Freeing alive inet6 device %p\n", idev);
+		pr_warn("Freeing alive inet6 device %pK\n", idev);
 		return;
 	}
 	snmp6_free_dev(idev);
@@ -786,11 +786,11 @@ void inet6_ifa_finish_destroy(struct inet6_ifaddr *ifp)
 	in6_dev_put(ifp->idev);
 
 	if (cancel_delayed_work(&ifp->dad_work))
-		pr_notice("delayed DAD work was pending while freeing ifa=%p\n",
+		pr_notice("delayed DAD work was pending while freeing ifa=%pK\n",
 			  ifp);
 
 	if (ifp->state != INET6_IFADDR_STATE_DEAD) {
-		pr_warn("Freeing alive inet6 address %p\n", ifp);
+		pr_warn("Freeing alive inet6 address %pK\n", ifp);
 		return;
 	}
 	ip6_rt_put(ifp->rt);
