@@ -781,3 +781,5 @@ CONFIG_LOCALVERSION="-v5.003"
 # Debugging
 CONFIG_DEBUG_DEVRES=n
 
+# sysfs access to Coprocessor register via /sys/devices/cpaccess/cpaccess0
+CONFIG_CP_ACCESS=n
