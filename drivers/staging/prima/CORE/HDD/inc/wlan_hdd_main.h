@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2016 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2017 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -131,6 +131,9 @@
 /** Maximum time(ms) to wait for tdls initiator to start direct communication **/
 #define WAIT_TIME_TDLS_INITIATOR    600
 
+/**Maximum time(ms) to wait for clear packet req to complete **/
+#define PKT_FILTER_TIMEOUT 300
+
 /* Maximum time to get linux regulatory entry settings */
 #ifdef CONFIG_ENABLE_LINUX_REG
 #define LINUX_REG_WAIT_TIME 300
@@ -240,6 +243,25 @@ typedef v_U8_t tWlanHddMacAddr[HDD_MAC_ADDR_LEN];
 
 #define WLAN_WAIT_TIME_EXTSCAN  1000
 
+#define HDD_MAX_STA_COUNT (HAL_NUM_STA)
+
+#ifdef MDNS_OFFLOAD
+#define MDNS_HEADER_LEN                           12
+#define MDNS_FQDN_TYPE_GENERAL                    0
+#define MDNS_FQDN_TYPE_UNIQUE                     1
+#define MAX_NUM_FIELD_DOMAINNAME                  6
+#define MAX_LEN_DOMAINNAME_FIELD                  64
+#define MAX_MDNS_RESP_TYPE                        6
+#define MDNS_TYPE_A                               1
+#define MDNS_TYPE_TXT                             16
+#define MDNS_TYPE_PTR                             12
+#define MDNS_TYPE_PTR_DNAME                       13
+#define MDNS_TYPE_SRV                             33
+#define MDNS_TYPE_SRV_TARGET                      34
+#define MDNS_CLASS                                1
+#define MDNS_TTL                                  5
+#endif /* MDNS_OFFLOAD */
+
 /*
  * Generic asynchronous request/response support
  *
@@ -297,6 +319,7 @@ extern spinlock_t hdd_context_lock;
 #define GET_FRAME_LOG_MAGIC   0x464c4f47   //FLOG
 #define MON_MODE_MSG_MAGIC 0x51436B3A //MON_MODE
 #define ANTENNA_CONTEXT_MAGIC 0x414E544E //ANTN
+#define CLEAR_FILTER_MAGIC 0x52349732 //CLEAR FILTER
 #define MON_MODE_MSG_TIMEOUT 5000
 #define MON_MODE_START 1
 #define MON_MODE_STOP  0
@@ -540,8 +563,14 @@ typedef struct hdd_wapi_info_s hdd_wapi_info_t;
 #endif /* FEATURE_WLAN_WAPI */
 
 typedef struct beacon_data_s {
-    u8 *head, *tail;
-    int head_len, tail_len;
+    u8 *head;
+    u8 *tail;
+    u8 *proberesp_ies;
+    u8 *assocresp_ies;
+    int head_len;
+    int tail_len;
+    int proberesp_ies_len;
+    int assocresp_ies_len;
     int dtim_period;
 } beacon_data_t;
 
@@ -770,7 +799,82 @@ typedef struct hdd_hostapd_state_s
 
 } hdd_hostapd_state_t;
 
+#ifdef DHCP_SERVER_OFFLOAD
+typedef struct hdd_dhcp_state_s
+{
+    VOS_STATUS dhcp_offload_status;
+    vos_event_t vos_event;
+} hdd_dhcp_state_t;
+#endif /* DHCP_SERVER_OFFLOAD */
 
+#ifdef MDNS_OFFLOAD
+typedef struct hdd_mdns_state_s
+{
+    VOS_STATUS mdns_enable_status;
+    VOS_STATUS mdns_fqdn_status;
+    VOS_STATUS mdns_resp_status;
+    vos_event_t vos_event;
+} hdd_mdns_state_t;
+#endif /* MDNS_OFFLOAD */
+
+#ifdef WLAN_FEATURE_TSF
+
+#define HDD_TSF_CAP_REQ_TIMEOUT 2000
+#define HDD_TSF_GET_REQ_TIMEOUT 2000
+
+/**
+ * enum hdd_tsf_get_state - status of get tsf action
+ *
+ * TSF_RETURN:                   get tsf
+ * TSF_STA_NOT_CONNECTED_NO_TSF: sta not connected to ap
+ * TSF_NOT_RETURNED_BY_FW:       fw not returned tsf
+ * TSF_CURRENT_IN_CAP_STATE:     driver in capture state
+ * TSF_CAPTURE_FAIL:             capture fail
+ * TSF_GET_FAIL:                 get fail
+ * TSF_RESET_GPIO_FAIL:          GPIO reset fail
+ * TSF_SAP_NOT_STARTED_NO_TSF    SAP not started
+ */
+enum hdd_tsf_get_state {
+	TSF_RETURN = 0,
+	TSF_STA_NOT_CONNECTED_NO_TSF,
+	TSF_NOT_RETURNED_BY_FW,
+	TSF_CURRENT_IN_CAP_STATE,
+	TSF_CAPTURE_FAIL,
+	TSF_GET_FAIL,
+	TSF_RESET_GPIO_FAIL,
+	TSF_SAP_NOT_STARTED_NO_TSF
+};
+
+/**
+ * enum hdd_tsf_capture_state - status of capture
+ *
+ * TSF_IDLE:                     idle
+ * TSF__CAP_STATE:               current is in capture state
+ */
+enum hdd_tsf_capture_state {
+	TSF_IDLE = 0,
+	TSF_CAP_STATE
+};
+
+/**
+ * struct hdd_tsf_ctx_s - TSF capture ctx
+ * @tsf_get_state : tsf action enum
+ * @tsf_capture_state: tsf capture state enum
+ * @tsf_capture_done_event : Indicate tsf completion
+ * @tsf_high : Higher 32-bit for 64-bit tsf
+ * @tsf_lo : Lower 32-bit for 64-bit tsf
+ *
+ */
+struct hdd_tsf_ctx_s {
+    enum hdd_tsf_get_state tsf_get_state;
+    enum hdd_tsf_capture_state tsf_capture_state;
+    vos_event_t tsf_capture_done_event;
+    vos_spin_lock_t tsf_lock;
+    uint32_t tsf_high;
+    uint32_t tsf_low;
+};
+
+#endif /* WLAN_FEATURE_TSF */
 /*
  * Per station structure kept in HDD for multiple station support for SoftAP
 */
@@ -1067,6 +1171,9 @@ struct hdd_adapter_s
    struct completion ibss_peer_info_comp;
 #endif /* WLAN_FEATURE_RMC */
 
+   /* completion variable for wlan suspend */
+   struct completion wlan_suspend_comp_var;
+
    /* Track whether the linkup handling is needed  */
    v_BOOL_t isLinkUpSvcNeeded;
 
@@ -1206,6 +1313,16 @@ struct hdd_adapter_s
 
    /* Currently used antenna Index*/
    int antennaIndex;
+#ifdef DHCP_SERVER_OFFLOAD
+   hdd_dhcp_state_t dhcp_status;
+#endif /* DHCP_SERVER_OFFLOAD */
+#ifdef MDNS_OFFLOAD
+    hdd_mdns_state_t mdns_status;
+#endif /* MDNS_OFFLOAD */
+
+#ifdef WLAN_FEATURE_TSF
+    struct hdd_tsf_ctx_s tsf_cap_ctx;
+#endif
 };
 
 #define WLAN_HDD_GET_STATION_CTX_PTR(pAdapter) (&(pAdapter)->sessionCtx.station)
@@ -1445,11 +1562,18 @@ struct hdd_context_s
    
    v_BOOL_t hdd_wlan_suspended;
    bool rx_wow_dump;
+
+   uint8_t bad_sta[HDD_MAX_STA_COUNT];
    
    spinlock_t filter_lock;
    
    /* Lock to avoid race condtion during start/stop bss*/
    struct mutex sap_lock;
+
+   struct work_struct  sap_start_work;
+   bool is_sap_restart_required;
+   bool is_ch_avoid_in_progress;
+   vos_spin_lock_t sap_update_info_lock;
 
    /* Lock to avoid race condtion between ROC timeout and
       cancel callbacks*/
@@ -1623,6 +1747,7 @@ struct hdd_context_s
     v_U8_t last_scan_reject_session_id;
     scan_reject_states last_scan_reject_reason;
     v_TIME_t last_scan_reject_timestamp;
+    bool is_ap_mode_wow_supported;
 };
 
 typedef enum  {
@@ -1689,6 +1814,20 @@ typedef enum
    WLAN_FW_MEM_DUMP_EN = 1<<6,
 } WLAN_ENABLE_HW_FW_LOG_TYPE;
 
+#ifdef MDNS_OFFLOAD
+/* Offload struct */
+struct hdd_mdns_resp_info {
+    uint8_t num_entries;
+    uint8_t *data;
+    uint16_t *offset;
+};
+
+struct hdd_mdns_resp_matched {
+    uint8_t num_matched;
+    uint8_t type;
+};
+#endif /* MDNS_OFFLOAD */
+
 /*--------------------------------------------------------------------------- 
   Function declarations and documenation
   -------------------------------------------------------------------------*/
@@ -1721,6 +1860,14 @@ VOS_STATUS hdd_stop_all_adapters( hdd_context_t *pHddCtx );
 VOS_STATUS hdd_reset_all_adapters( hdd_context_t *pHddCtx );
 VOS_STATUS hdd_start_all_adapters( hdd_context_t *pHddCtx );
 VOS_STATUS hdd_reconnect_all_adapters( hdd_context_t *pHddCtx );
+struct cfg80211_bss* hdd_get_bss_entry(struct wiphy *wiphy,
+      struct ieee80211_channel *channel,
+      const u8 *bssid,
+      const u8 *ssid, size_t ssid_len);
+void hdd_connect_result(struct net_device *dev, const u8 *bssid,
+   tCsrRoamInfo *roam_info, const u8 *req_ie,
+   size_t req_ie_len, const u8 * resp_ie,
+   size_t resp_ie_len, u16 status, gfp_t gfp);
 void hdd_dump_concurrency_info(hdd_context_t *pHddCtx);
 hdd_adapter_t * hdd_get_adapter_by_name( hdd_context_t *pHddCtx, tANI_U8 *name );
 hdd_adapter_t * hdd_get_adapter_by_macaddr( hdd_context_t *pHddCtx, tSirMacAddr macAddr );
@@ -1951,4 +2098,38 @@ void wlan_hdd_defer_scan_init_work(hdd_context_t *pHddCtx,
                                 unsigned long delay);
 int hdd_reassoc(hdd_adapter_t *pAdapter, const tANI_U8 *bssid,
 			const tANI_U8 channel, const handoff_src src);
+#ifdef MDNS_OFFLOAD
+bool wlan_hdd_set_mdns_offload(hdd_adapter_t *adapter);
+#else
+static inline bool wlan_hdd_set_mdns_offload(hdd_adapter_t *adapter)
+{
+    return FALSE;
+}
+#endif /* MDNS_OFFLOAD */
+
+void wlan_hdd_start_sap(hdd_adapter_t *ap_adapter);
+
+#ifdef WLAN_FEATURE_TSF
+void wlan_hdd_tsf_init(hdd_adapter_t *adapter);
+int hdd_capture_tsf(hdd_adapter_t *adapter, uint32_t *buf, int len);
+int hdd_indicate_tsf(hdd_adapter_t *adapter, uint32_t *buf, int len);
+#else
+static inline void
+wlan_hdd_tsf_init(hdd_adapter_t *adapter)
+{
+	return;
+}
+
+static inline int
+hdd_indicate_tsf(hdd_adapter_t *adapter, uint32_t *buf, int len)
+{
+	return -ENOTSUPP;
+}
+
+static inline int
+hdd_capture_tsf(hdd_adapter_t *adapter, uint32_t *buf, int len)
+{
+	return -ENOTSUPP;
+}
+#endif
 #endif    // end #if !defined( WLAN_HDD_MAIN_H )

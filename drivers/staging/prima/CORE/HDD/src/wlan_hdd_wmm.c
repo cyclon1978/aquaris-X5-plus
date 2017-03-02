@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2015 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2016 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -92,6 +92,12 @@
 #define DHCP_DESTINATION_PORT 0x4300
 
 #define HDD_WMM_UP_TO_AC_MAP_SIZE 8
+
+#define IPv6_ADDR_ARRAY(a) (a)[0], (a)[1], (a)[2], (a)[3], (a)[4], (a)[5],\
+        (a)[6], (a)[7], (a)[8], (a)[9], (a)[10], (a)[11], (a)[12], (a)[13],\
+        (a)[14], (a)[15]
+#define IPv6_ADDR_STR "%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:"\
+                       "%02x%02x:%02x%02x"
 
 const v_U8_t hddWmmUpToAcMap[] = {
    WLANTL_AC_BE,
@@ -375,7 +381,7 @@ static void hdd_wmm_free_context (hdd_wmm_qos_context_t* pQosContext)
    }
 
    VOS_TRACE(VOS_MODULE_ID_HDD, WMM_TRACE_LEVEL_INFO_LOW,
-             "%s: Entered, context %pK",
+             "%s: Entered, context %p",
              __func__, pQosContext);
 
    // take the wmmLock since we're manipulating the context list
@@ -438,7 +444,7 @@ static void hdd_wmm_notify_app (hdd_wmm_qos_context_t* pQosContext)
    }
 
    VOS_TRACE(VOS_MODULE_ID_HDD, WMM_TRACE_LEVEL_INFO_LOW,
-             "%s: Entered, context %pK",
+             "%s: Entered, context %p",
              __func__, pQosContext);
 
    mutex_lock(&pHddCtx->wmmLock);
@@ -583,7 +589,7 @@ void hdd_wmm_inactivity_timer_cb( v_PVOID_t pUserData )
     if ((NULL == pAdapter) || (WLAN_HDD_ADAPTER_MAGIC != pAdapter->magic))
     {
         VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
-                  FL("invalid pAdapter: %pK"), pAdapter);
+                  FL("invalid pAdapter: %p"), pAdapter);
         return;
     }
 
@@ -753,7 +759,7 @@ static eHalStatus hdd_wmm_sme_callback (tHalHandle hHal,
 
 
    VOS_TRACE(VOS_MODULE_ID_HDD, WMM_TRACE_LEVEL_INFO_LOW,
-             "%s: Entered, context %pK",
+             "%s: Entered, context %p",
              __func__, pQosContext);
 
    mutex_lock(&pHddCtx->wmmLock);
@@ -773,7 +779,7 @@ static eHalStatus hdd_wmm_sme_callback (tHalHandle hHal,
    pAc = &pAdapter->hddWmmStatus.wmmAcStatus[acType];
 
    VOS_TRACE(VOS_MODULE_ID_HDD, WMM_TRACE_LEVEL_INFO_LOW,
-             "%s: status %d flowid %d info %pK",
+             "%s: status %d flowid %d info %p",
              __func__, smeStatus, qosFlowId, pCurrentQosInfo);
 
    switch (smeStatus)
@@ -1449,7 +1455,7 @@ static void __hdd_wmm_do_implicit_qos(struct work_struct *work)
    }
 
    VOS_TRACE(VOS_MODULE_ID_HDD, WMM_TRACE_LEVEL_INFO_LOW,
-             "%s: Entered, context %pK",
+             "%s: Entered, context %p",
              __func__, pQosContext);
 
    mutex_lock(&pHddCtx->wmmLock);
@@ -1468,7 +1474,7 @@ static void __hdd_wmm_do_implicit_qos(struct work_struct *work)
    pAc = &pAdapter->hddWmmStatus.wmmAcStatus[acType];
 
    VOS_TRACE(VOS_MODULE_ID_HDD, WMM_TRACE_LEVEL_INFO_LOW,
-             "%s: pAdapter %pK acType %d",
+             "%s: pAdapter %p acType %d",
              __func__, pAdapter, acType);
 
    if (!pAc->wmmAcAccessNeeded)
@@ -1876,6 +1882,81 @@ v_BOOL_t hdd_skb_is_eapol_or_wai_packet(struct sk_buff *skb)
        return VOS_TRUE;
 
     return VOS_FALSE;
+}
+
+/**============================================================================
+  @brief hdd_log_ip_addr() - Function to log IP header src and dst address
+  @param skb      : [in]  pointer to OS packet (sk_buff)
+  @return         : none
+  ===========================================================================*/
+void hdd_log_ip_addr(struct sk_buff *skb)
+{
+   union generic_ethhdr *pHdr;
+   struct iphdr *pIpHdr;
+   unsigned char * pPkt;
+   char *buf;
+
+   pPkt = skb->data;
+   pHdr = (union generic_ethhdr *)pPkt;
+
+   if (pHdr->eth_II.h_proto == htons(ETH_P_IP))
+   {
+      pIpHdr = (struct iphdr *)&pPkt[sizeof(pHdr->eth_II)];
+
+      buf = (char *)&pIpHdr->saddr;
+      VOS_TRACE(VOS_MODULE_ID_HDD, WMM_TRACE_LEVEL_ERROR,
+               "%s: src addr %d:%d:%d:%d", __func__,
+               buf[0], buf[1], buf[2], buf[3]);
+
+      buf = (char *)&pIpHdr->daddr;
+      VOS_TRACE(VOS_MODULE_ID_HDD, WMM_TRACE_LEVEL_ERROR,
+               "%s: dst addr %d:%d:%d:%d", __func__,
+               buf[0], buf[1], buf[2], buf[3]);
+   }
+   else if (pHdr->eth_II.h_proto ==  htons(ETH_P_IPV6))
+   {
+      pIpHdr = (struct iphdr *)&pPkt[sizeof(pHdr->eth_8023)];
+
+      buf = (char *)&pIpHdr->saddr;
+      VOS_TRACE(VOS_MODULE_ID_HDD, WMM_TRACE_LEVEL_ERROR,
+               "%s: src addr "IPv6_ADDR_STR, __func__, IPv6_ADDR_ARRAY(buf));
+
+      buf = (char *)&pIpHdr->daddr;
+      VOS_TRACE(VOS_MODULE_ID_HDD, WMM_TRACE_LEVEL_ERROR,
+               "%s: dst addr "IPv6_ADDR_STR, __func__, IPv6_ADDR_ARRAY(buf));
+   }
+   else if ((ntohs(pHdr->eth_II.h_proto) < WLAN_MIN_PROTO) &&
+            (pHdr->eth_8023.h_snap.dsap == WLAN_SNAP_DSAP) &&
+            (pHdr->eth_8023.h_snap.ssap == WLAN_SNAP_SSAP) &&
+            (pHdr->eth_8023.h_snap.ctrl == WLAN_SNAP_CTRL))
+   {
+      if (pHdr->eth_8023.h_proto == htons(ETH_P_IP))
+      {
+         pIpHdr = (struct iphdr *)&pPkt[sizeof(pHdr->eth_8023)];
+
+         buf = (char *)&pIpHdr->saddr;
+         VOS_TRACE(VOS_MODULE_ID_HDD, WMM_TRACE_LEVEL_ERROR,
+                  "%s: src addr %d:%d:%d:%d", __func__,
+                  buf[0], buf[1], buf[2], buf[3]);
+
+         buf = (char *)&pIpHdr->daddr;
+         VOS_TRACE(VOS_MODULE_ID_HDD, WMM_TRACE_LEVEL_ERROR,
+                  "%s: dst addr %d:%d:%d:%d", __func__,
+                  buf[0], buf[1], buf[2], buf[3]);
+      }
+      else if (pHdr->eth_8023.h_proto == htons(ETH_P_IPV6))
+      {
+         pIpHdr = (struct iphdr *)&pPkt[sizeof(pHdr->eth_8023)];
+
+         buf = (char *)&pIpHdr->saddr;
+         VOS_TRACE(VOS_MODULE_ID_HDD, WMM_TRACE_LEVEL_ERROR,
+               "%s: src addr "IPv6_ADDR_STR, __func__, IPv6_ADDR_ARRAY(buf));
+
+         buf = (char *)&pIpHdr->daddr;
+         VOS_TRACE(VOS_MODULE_ID_HDD, WMM_TRACE_LEVEL_ERROR,
+                "%s: dst addr "IPv6_ADDR_STR, __func__, IPv6_ADDR_ARRAY(buf));
+      }
+   }
 }
 
 /**============================================================================
@@ -2356,7 +2437,7 @@ VOS_STATUS hdd_wmm_acquire_access( hdd_adapter_t* pAdapter,
 
    // we need to establish implicit QoS
    VOS_TRACE(VOS_MODULE_ID_HDD, WMM_TRACE_LEVEL_INFO,
-             "%s: Need to schedule implicit QoS for TL AC %d, pAdapter is %pK",
+             "%s: Need to schedule implicit QoS for TL AC %d, pAdapter is %p",
              __func__, acType, pAdapter);
 
    pAdapter->hddWmmStatus.wmmAcStatus[acType].wmmAcAccessNeeded = VOS_TRUE;
@@ -2381,7 +2462,7 @@ VOS_STATUS hdd_wmm_acquire_access( hdd_adapter_t* pAdapter,
              hdd_wmm_do_implicit_qos);
 
    VOS_TRACE(VOS_MODULE_ID_HDD, WMM_TRACE_LEVEL_INFO,
-             "%s: Scheduling work for AC %d, context %pK",
+             "%s: Scheduling work for AC %d, context %p",
              __func__, acType, pQosContext);
 
    schedule_work(&pQosContext->wmmAcSetupImplicitQos);
@@ -2848,7 +2929,7 @@ hdd_wlan_wmm_status_e hdd_wmm_addts( hdd_adapter_t* pAdapter,
    pQosContext->qosFlowId = 0;
 
    VOS_TRACE(VOS_MODULE_ID_HDD, WMM_TRACE_LEVEL_INFO,
-             "%s: Setting up QoS, context %pK",
+             "%s: Setting up QoS, context %p",
              __func__, pQosContext);
 
    mutex_lock(&pHddCtx->wmmLock);
@@ -2983,7 +3064,7 @@ hdd_wlan_wmm_status_e hdd_wmm_delts( hdd_adapter_t* pAdapter,
 
 
    VOS_TRACE(VOS_MODULE_ID_HDD, WMM_TRACE_LEVEL_INFO_LOW,
-             "%s: found handle 0x%x, flow %d, AC %d, context %pK",
+             "%s: found handle 0x%x, flow %d, AC %d, context %p",
              __func__, handle, qosFlowId, acType, pQosContext);
 
 #ifndef WLAN_MDM_CODE_REDUCTION_OPT
@@ -3091,7 +3172,7 @@ hdd_wlan_wmm_status_e hdd_wmm_checkts( hdd_adapter_t* pAdapter,
       if (pQosContext->handle == handle)
       {
          VOS_TRACE(VOS_MODULE_ID_HDD, WMM_TRACE_LEVEL_INFO_LOW,
-                   "%s: found handle 0x%x, context %pK",
+                   "%s: found handle 0x%x, context %p",
                    __func__, handle, pQosContext);
 
          status = pQosContext->lastStatus;

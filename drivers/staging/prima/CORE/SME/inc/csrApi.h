@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2011-2017 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -405,6 +405,7 @@ typedef struct tagCsrScanResultFilter
 #ifdef WLAN_FEATURE_ROAM_SCAN_OFFLOAD
     tANI_BOOLEAN isPERRoamScan;
 #endif
+    tCsrBssid bssid_hint;
 }tCsrScanResultFilter;
 
 
@@ -958,7 +959,7 @@ typedef struct tagCsrRoamProfile
     tCsrMobilityDomainInfo MDID;
 #endif
     tVOS_CON_MODE csrPersona;
-
+    tCsrBssid bssid_hint;
 }tCsrRoamProfile;
 
 
@@ -1191,6 +1192,7 @@ typedef struct tagCsrConfigParam
     v_BOOL_t isPERRoamEnabled;
     v_BOOL_t isPERRoamCCAEnabled;
     v_S15_t PERRoamFullScanThreshold;
+    v_S15_t PERMinRssiThresholdForRoam;
     v_U32_t rateUpThreshold;
     v_U32_t rateDownThreshold;
     v_U32_t waitPeriodForNextPERScan;
@@ -1236,6 +1238,7 @@ typedef struct tagCsrConfigParam
     uint32_t edca_vi_aifs;
     uint32_t edca_bk_aifs;
     uint32_t edca_be_aifs;
+    tANI_BOOLEAN disable_scan_during_sco;
 }tCsrConfigParam;
 
 //Tush
@@ -1549,6 +1552,18 @@ struct tagCsrDelStaParams
     tCsrBssid peerMacAddr;
     u16 reason_code;
     u8 subtype;
+};
+
+
+/**
+ * struct csr_set_tx_max_pwr_per_band - Req params to
+ * set max tx power per band
+ * @band: band for which power to be set
+ * @power: power to set in dB
+ */
+struct csr_set_tx_max_pwr_per_band {
+    eCsrBand band;
+    tPowerdBm power;
 };
 
 ////////////////////////////////////////////Common SCAN starts

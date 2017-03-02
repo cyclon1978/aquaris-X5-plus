@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2016 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2017 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -102,6 +102,9 @@
 
 #define MAX_CHANNEL NUM_2_4GHZ_CHANNELS + NUM_5GHZ_CHANNELS
 
+#define IS_CHANNEL_VALID(channel) ((channel >= 0 && channel < 15) \
+                     || (channel >= 36 && channel <= 184))
+
 #ifdef WLAN_FEATURE_LINK_LAYER_STATS
 /* Number of Radios */
 #define NUM_RADIOS  0x1
@@ -170,6 +173,7 @@ enum qca_nl80211_vendor_subcmds {
 
     /* Get Concurrency Matrix */
     QCA_NL80211_VENDOR_SUBCMD_GET_CONCURRENCY_MATRIX = 42,
+    QCA_NL80211_VENDOR_SUBCMD_APFIND = 52,
     /* Start Wifi Logger */
     QCA_NL80211_VENDOR_SUBCMD_WIFI_LOGGER_START = 62,
 
@@ -1105,6 +1109,10 @@ enum qca_wlan_vendor_config {
     QCA_WLAN_VENDOR_ATTR_CONFIG_FINE_TIME_MEASUREMENT,
     QCA_WLAN_VENDOR_ATTR_CONFIG_TX_RATE,
     QCA_WLAN_VENDOR_ATTR_CONFIG_PENALIZE_AFTER_NCONS_BEACON_MISS,
+    /* 8-bit unsigned value to set the beacon miss threshold in 2.4 GHz */
+    QCA_WLAN_VENDOR_ATTR_CONFIG_BEACON_MISS_THRESHOLD_24 = 37,
+    /* 8-bit unsigned value to set the beacon miss threshold in 5 GHz */
+    QCA_WLAN_VENDOR_ATTR_CONFIG_BEACON_MISS_THRESHOLD_5 = 38,
     /* keep last */
     QCA_WLAN_VENDOR_ATTR_CONFIG_LAST,
     QCA_WLAN_VENDOR_ATTR_CONFIG_MAX =
@@ -1436,4 +1444,20 @@ struct cfg80211_bss* wlan_hdd_cfg80211_update_bss_list(
 
 struct cfg80211_bss *wlan_hdd_cfg80211_inform_bss_frame(hdd_adapter_t *pAdapter,
 		tSirBssDescription *bss_desc);
+#ifdef CFG80211_DEL_STA_V2
+int wlan_hdd_cfg80211_del_station(struct wiphy *wiphy,
+                                  struct net_device *dev,
+                                  struct station_del_parameters *param);
+#else
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,16,0)) || defined(WITH_BACKPORTS)
+int wlan_hdd_cfg80211_del_station(struct wiphy *wiphy,
+                                  struct net_device *dev, const u8 *mac);
+#else
+int wlan_hdd_cfg80211_del_station(struct wiphy *wiphy,
+                                  struct net_device *dev, u8 *mac);
+#endif
+#endif
+
+int wlan_hdd_cfg80211_update_apies(hdd_adapter_t *pHostapdAdapter);
+int wlan_hdd_try_disconnect(hdd_adapter_t *pAdapter);
 #endif
