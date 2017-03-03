@@ -776,10 +776,14 @@ CONFIG_POWERSUSPEND=y
 
 ########################################################################
 
-CONFIG_LOCALVERSION="-v5.003"
+CONFIG_LOCALVERSION="-v5.004"
 
 # Debugging
 CONFIG_DEBUG_DEVRES=n
 
-# sysfs access to Coprocessor register via /sys/devices/cpaccess/cpaccess0
+# deny sysfs access to Coprocessor register via /sys/devices/cpaccess/cpaccess0
 CONFIG_CP_ACCESS=n
+
+# optimize: prevent duplicate page checking
+CONFIG_KSM=y
+CONFIG_KSM_CHECK_PAGE=y
