@@ -674,7 +674,8 @@ static int msm_isp_proc_cmd_list_unlocked(struct vfe_device *vfe_dev, void *arg)
 		if (++count >= MAX_ISP_REG_LIST) {
 			pr_err("%s:%d Error exceeding the max register count:%u\n",
 				__func__, __LINE__, count);
-		break;
+			rc = -EINVAL;
+			break;
 		}
 		if (copy_from_user(&cmd_next, (void __user *)cmd.next,
 			sizeof(struct msm_vfe_cfg_cmd_list))) {
@@ -750,7 +751,8 @@ static int msm_isp_proc_cmd_list_compat(struct vfe_device *vfe_dev, void *arg)
 		if (++count >= MAX_ISP_REG_LIST) {
 			pr_err("%s:%d Error exceeding the max register count:%u\n",
 				__func__, __LINE__, count);
-		break;
+			rc = -EINVAL;
+			break;
 		}
 		if (copy_from_user(&cmd_next, compat_ptr(cmd.next),
 			sizeof(struct msm_vfe_cfg_cmd_list_32))) {
