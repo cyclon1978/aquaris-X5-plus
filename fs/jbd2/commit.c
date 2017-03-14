@@ -617,7 +617,7 @@ void jbd2_journal_commit_transaction(journal_t *journal)
 			}
 
 			bh = jh2bh(descriptor);
-			jbd_debug(4, "JBD2: got buffer %llu (%p)\n",
+			jbd_debug(4, "JBD2: got buffer %llu (%pK)\n",
 				(unsigned long long)bh->b_blocknr, bh->b_data);
 			header = (journal_header_t *)&bh->b_data[0];
 			header->h_magic     = cpu_to_be32(JBD2_MAGIC_NUMBER);

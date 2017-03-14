@@ -183,7 +183,7 @@ alloc_transaction:
 		}
 	}
 
-	jbd_debug(3, "New handle %p going live.\n", handle);
+	jbd_debug(3, "New handle %pK going live.\n", handle);
 
 	/*
 	 * We need to hold j_state_lock until t_updates has been incremented,
@@ -254,7 +254,7 @@ repeat:
 		 */
 		DEFINE_WAIT(wait);
 
-		jbd_debug(2, "Handle %p starting new commit...\n", handle);
+		jbd_debug(2, "Handle %pK starting new commit...\n", handle);
 		atomic_sub(nblocks, &transaction->t_outstanding_credits);
 		prepare_to_wait(&journal->j_wait_transaction_locked, &wait,
 				TASK_UNINTERRUPTIBLE);
@@ -294,7 +294,7 @@ repeat:
 	 * jbd2_journal_extend().
 	 */
 	if (__jbd2_log_space_left(journal) < jbd_space_needed(journal)) {
-		jbd_debug(2, "Handle %p waiting for checkpoint...\n", handle);
+		jbd_debug(2, "Handle %pK waiting for checkpoint...\n", handle);
 		atomic_sub(nblocks, &transaction->t_outstanding_credits);
 		read_unlock(&journal->j_state_lock);
 		write_lock(&journal->j_state_lock);
@@ -313,7 +313,7 @@ repeat:
 	handle->h_start_jiffies = jiffies;
 	atomic_inc(&transaction->t_updates);
 	atomic_inc(&transaction->t_handle_count);
-	jbd_debug(4, "Handle %p given %d credits (total %d, free %d)\n",
+	jbd_debug(4, "Handle %pK given %d credits (total %d, free %d)\n",
 		  handle, nblocks,
 		  atomic_read(&transaction->t_outstanding_credits),
 		  __jbd2_log_space_left(journal));
@@ -437,7 +437,7 @@ int jbd2_journal_extend(handle_t *handle, int nblocks)
 
 	/* Don't extend a locked-down transaction! */
 	if (handle->h_transaction->t_state != T_RUNNING) {
-		jbd_debug(3, "denied handle %p %d blocks: "
+		jbd_debug(3, "denied handle %pK %d blocks: "
 			  "transaction not running\n", handle, nblocks);
 		goto error_out;
 	}
@@ -446,13 +446,13 @@ int jbd2_journal_extend(handle_t *handle, int nblocks)
 	wanted = atomic_read(&transaction->t_outstanding_credits) + nblocks;
 
 	if (wanted > journal->j_max_transaction_buffers) {
-		jbd_debug(3, "denied handle %p %d blocks: "
+		jbd_debug(3, "denied handle %pK %d blocks: "
 			  "transaction too large\n", handle, nblocks);
 		goto unlock;
 	}
 
 	if (wanted > __jbd2_log_space_left(journal)) {
-		jbd_debug(3, "denied handle %p %d blocks: "
+		jbd_debug(3, "denied handle %pK %d blocks: "
 			  "insufficient log space\n", handle, nblocks);
 		goto unlock;
 	}
@@ -468,7 +468,7 @@ int jbd2_journal_extend(handle_t *handle, int nblocks)
 	atomic_add(nblocks, &transaction->t_outstanding_credits);
 	result = 0;
 
-	jbd_debug(3, "extended handle %p by %d\n", handle, nblocks);
+	jbd_debug(3, "extended handle %pK by %d\n", handle, nblocks);
 unlock:
 	spin_unlock(&transaction->t_handle_lock);
 error_out:
@@ -520,7 +520,7 @@ int jbd2__journal_restart(handle_t *handle, int nblocks, gfp_t gfp_mask)
 	tid = transaction->t_tid;
 	spin_unlock(&transaction->t_handle_lock);
 
-	jbd_debug(2, "restarting handle %p\n", handle);
+	jbd_debug(2, "restarting handle %pK\n", handle);
 	need_to_start = !tid_geq(journal->j_commit_request, tid);
 	read_unlock(&journal->j_state_lock);
 	if (need_to_start)
@@ -647,7 +647,7 @@ do_get_write_access(handle_t *handle, struct journal_head *jh,
 	transaction = handle->h_transaction;
 	journal = transaction->t_journal;
 
-	jbd_debug(5, "journal_head %p, force_copy %d\n", jh, force_copy);
+	jbd_debug(5, "journal_head %pK, force_copy %d\n", jh, force_copy);
 
 	JBUFFER_TRACE(jh, "entry");
 repeat:
@@ -919,7 +919,7 @@ int jbd2_journal_get_create_access(handle_t *handle, struct buffer_head *bh)
 	struct journal_head *jh = jbd2_journal_add_journal_head(bh);
 	int err;
 
-	jbd_debug(5, "journal_head %p\n", jh);
+	jbd_debug(5, "journal_head %pK\n", jh);
 	err = -EROFS;
 	if (is_handle_aborted(handle))
 		goto out;
@@ -1139,7 +1139,7 @@ int jbd2_journal_dirty_metadata(handle_t *handle, struct buffer_head *bh)
 		ret = -EUCLEAN;
 		goto out;
 	}
-	jbd_debug(5, "journal_head %p\n", jh);
+	jbd_debug(5, "journal_head %pK\n", jh);
 	JBUFFER_TRACE(jh, "entry");
 
 	jbd_lock_bh_state(bh);
@@ -1170,8 +1170,8 @@ int jbd2_journal_dirty_metadata(handle_t *handle, struct buffer_head *bh)
 		if (unlikely(jh->b_transaction !=
 			     journal->j_running_transaction)) {
 			printk(KERN_EMERG "JBD: %s: "
-			       "jh->b_transaction (%llu, %p, %u) != "
-			       "journal->j_running_transaction (%p, %u)",
+			       "jh->b_transaction (%llu, %pK, %u) != "
+			       "journal->j_running_transaction (%pK, %u)",
 			       journal->j_devname,
 			       (unsigned long long) bh->b_blocknr,
 			       jh->b_transaction,
@@ -1197,8 +1197,8 @@ int jbd2_journal_dirty_metadata(handle_t *handle, struct buffer_head *bh)
 		if (unlikely(jh->b_transaction !=
 			     journal->j_committing_transaction)) {
 			printk(KERN_EMERG "JBD: %s: "
-			       "jh->b_transaction (%llu, %p, %u) != "
-			       "journal->j_committing_transaction (%p, %u)",
+			       "jh->b_transaction (%llu, %pK, %u) != "
+			       "journal->j_committing_transaction (%pK, %u)",
 			       journal->j_devname,
 			       (unsigned long long) bh->b_blocknr,
 			       jh->b_transaction,
@@ -1210,8 +1210,8 @@ int jbd2_journal_dirty_metadata(handle_t *handle, struct buffer_head *bh)
 		}
 		if (unlikely(jh->b_next_transaction != transaction)) {
 			printk(KERN_EMERG "JBD: %s: "
-			       "jh->b_next_transaction (%llu, %p, %u) != "
-			       "transaction (%p, %u)",
+			       "jh->b_next_transaction (%llu, %pK, %u) != "
+			       "transaction (%pK, %u)",
 			       journal->j_devname,
 			       (unsigned long long) bh->b_blocknr,
 			       jh->b_next_transaction,
@@ -1407,7 +1407,7 @@ int jbd2_journal_stop(handle_t *handle)
 		return err;
 	}
 
-	jbd_debug(4, "Handle %p going down\n", handle);
+	jbd_debug(4, "Handle %pK going down\n", handle);
 	trace_jbd2_handle_stats(journal->j_fs_dev->bd_dev,
 				handle->h_transaction->t_tid,
 				handle->h_type, handle->h_line_no,
@@ -1493,7 +1493,7 @@ int jbd2_journal_stop(handle_t *handle)
 		 * anything to disk. */
 
 		jbd_debug(2, "transaction too old, requesting commit for "
-					"handle %p\n", handle);
+					"handle %pK\n", handle);
 		/* This is non-blocking */
 		jbd2_log_start_commit(journal, transaction->t_tid);
 

@@ -1102,7 +1102,7 @@ kvm_mips_emulate_inst(unsigned long cause, uint32_t *opc,
 		break;
 
 	default:
-		printk("Instruction emulation not supported (%p/%#x)\n", opc,
+		printk("Instruction emulation not supported (%pK/%#x)\n", opc,
 		       inst);
 		kvm_arch_vcpu_dump_regs(vcpu);
 		er = EMULATE_FAIL;
@@ -1537,7 +1537,7 @@ kvm_mips_handle_ri(unsigned long cause, uint32_t *opc,
 	inst = kvm_get_inst(opc, vcpu);
 
 	if (inst == KVM_INVALID_INST) {
-		printk("%s: Cannot get inst @ %p\n", __func__, opc);
+		printk("%s: Cannot get inst @ %pK\n", __func__, opc);
 		return EMULATE_FAIL;
 	}
 
@@ -1576,12 +1576,12 @@ kvm_mips_handle_ri(unsigned long cause, uint32_t *opc,
 			break;
 
 		default:
-			kvm_debug("RDHWR %#x not supported @ %p\n", rd, opc);
+			kvm_debug("RDHWR %#x not supported @ %pK\n", rd, opc);
 			er = EMULATE_FAIL;
 			break;
 		}
 	} else {
-		kvm_debug("Emulate RI not supported @ %p: %#x\n", opc, inst);
+		kvm_debug("Emulate RI not supported @ %pK: %#x\n", opc, inst);
 		er = EMULATE_FAIL;
 	}
 

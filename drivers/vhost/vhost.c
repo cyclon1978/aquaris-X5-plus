@@ -1187,7 +1187,7 @@ int vhost_get_vq_desc(struct vhost_dev *dev, struct vhost_virtqueue *vq,
 	/* Check it isn't doing very strange things with descriptor numbers. */
 	last_avail_idx = vq->last_avail_idx;
 	if (unlikely(__get_user(vq->avail_idx, &vq->avail->idx))) {
-		vq_err(vq, "Failed to access avail idx at %p\n",
+		vq_err(vq, "Failed to access avail idx at %pK\n",
 		       &vq->avail->idx);
 		return -EFAULT;
 	}
@@ -1209,7 +1209,7 @@ int vhost_get_vq_desc(struct vhost_dev *dev, struct vhost_virtqueue *vq,
 	 * the index we've seen. */
 	if (unlikely(__get_user(head,
 				&vq->avail->ring[last_avail_idx % vq->num]))) {
-		vq_err(vq, "Failed to read head: idx %d address %p\n",
+		vq_err(vq, "Failed to read head: idx %d address %pK\n",
 		       last_avail_idx,
 		       &vq->avail->ring[last_avail_idx % vq->num]);
 		return -EFAULT;
@@ -1243,7 +1243,7 @@ int vhost_get_vq_desc(struct vhost_dev *dev, struct vhost_virtqueue *vq,
 		}
 		ret = __copy_from_user(&desc, vq->desc + i, sizeof desc);
 		if (unlikely(ret)) {
-			vq_err(vq, "Failed to get descriptor: idx %d addr %p\n",
+			vq_err(vq, "Failed to get descriptor: idx %d addr %pK\n",
 			       i, vq->desc + i);
 			return -EFAULT;
 		}
@@ -1493,14 +1493,14 @@ bool vhost_enable_notify(struct vhost_dev *dev, struct vhost_virtqueue *vq)
 	if (!vhost_has_feature(dev, VIRTIO_RING_F_EVENT_IDX)) {
 		r = vhost_update_used_flags(vq);
 		if (r) {
-			vq_err(vq, "Failed to enable notification at %p: %d\n",
+			vq_err(vq, "Failed to enable notification at %pK: %d\n",
 			       &vq->used->flags, r);
 			return false;
 		}
 	} else {
 		r = vhost_update_avail_event(vq, vq->avail_idx);
 		if (r) {
-			vq_err(vq, "Failed to update avail event index at %p: %d\n",
+			vq_err(vq, "Failed to update avail event index at %pK: %d\n",
 			       vhost_avail_event(vq), r);
 			return false;
 		}
@@ -1510,7 +1510,7 @@ bool vhost_enable_notify(struct vhost_dev *dev, struct vhost_virtqueue *vq)
 	smp_mb();
 	r = __get_user(avail_idx, &vq->avail->idx);
 	if (r) {
-		vq_err(vq, "Failed to check avail idx at %p: %d\n",
+		vq_err(vq, "Failed to check avail idx at %pK: %d\n",
 		       &vq->avail->idx, r);
 		return false;
 	}
@@ -1529,7 +1529,7 @@ void vhost_disable_notify(struct vhost_dev *dev, struct vhost_virtqueue *vq)
 	if (!vhost_has_feature(dev, VIRTIO_RING_F_EVENT_IDX)) {
 		r = vhost_update_used_flags(vq);
 		if (r)
-			vq_err(vq, "Failed to enable notification at %p: %d\n",
+			vq_err(vq, "Failed to enable notification at %pK: %d\n",
 			       &vq->used->flags, r);
 	}
 }
