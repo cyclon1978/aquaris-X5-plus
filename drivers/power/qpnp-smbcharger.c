@@ -40,6 +40,74 @@
 #include <linux/ktime.h>
 #include "pmic-voter.h"
 
+#ifdef CONFIG_BLX
+#include <linux/blx.h>
+
+// 4400 is device default, taken from batterydata-gohan (qcom,max-voltage-uv / 1000) but this is really high... 4320 it is in oneplus3 kernel
+#define MAX_FLOAT_MV_BLX		4400
+
+static const int lookupVfloatFor[101] =
+{
+	// 0%
+	4100, // 75%
+
+	//  1..10%
+	4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100,
+
+	// 11..20%
+	4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100,
+
+	// 21.. 30%
+	4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100,
+
+	// 31.. 40%
+	4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100,
+
+	// 41.. 50%
+	4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100,
+
+	// 51.. 60%
+	4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100,
+
+	// 61.. 70%
+	4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100, 4100,
+
+	// 71.. 80%
+	4100, 4100, 4100, 4100, // 75%
+	4100, //  75 ->  75% validated
+	4120, //  76 ->  78% validated
+	4120, //  77 ->  78% validated
+	4120, //  78 ->  78% validated
+	4140, //  79 ->  79% validated
+	4160, //  80 ->  80% validated
+
+	// 81.. 90%
+	4180, //  81 ->  83% validated
+	4180, //  82 ->  83% validated
+	4180, //  83 ->  83% validated
+	4200, //  84 ->  84% validated
+	4220, //  85 ->   ? validating
+	4220, //  86 ->   ?
+	4240, //  87 ->   ?
+	4240, //  88 ->   ?
+	4260, //  89 ->   ?
+	4260, //  90 ->   ?
+
+	// 91..100%
+	4280, //  91 ->  92% validated
+	4280, //  92 ->  92% validated
+	4300, //  93 ->  94% validated
+	4300, //  94 ->  94% validated
+	4320, //  95 ->   ?
+	4340, //  96 ->   ?
+	4350, //  97 ->   ?
+	4360, //  98 ->   ?
+	4380, //  99 ->   ?
+	4400, // 100 -> 100% validated
+};
+
+#endif
+
 /* Mask/Bit helpers */
 #define _SMB_MASK(BITS, POS) \
 	((unsigned char)(((1 << (BITS)) - 1) << (POS)))
@@ -3079,11 +3147,35 @@ static int smbchg_float_voltage_comp_set(struct smbchg_chip *chip, int code)
 #define VHIGH_RANGE_FLOAT_MIN_MV	4360
 #define VHIGH_RANGE_FLOAT_MIN_VAL	0x2C
 #define VHIGH_RANGE_FLOAT_STEP_MV	20
-static int smbchg_float_voltage_set(struct smbchg_chip *chip, int vfloat_mv)
+
+static int smbchg_float_voltage_set(struct smbchg_chip *chip, int vfloat_mv_original)
 {
 	struct power_supply *parallel_psy = get_parallel_psy(chip);
 	int rc, delta;
 	u8 temp;
+
+	int vfloat_mv = vfloat_mv_original;
+
+#ifdef CONFIG_BLX
+	int charging_limit = get_charginglimit();
+
+	if (charging_limit >= 0 && charging_limit <= 100) {
+		int vfloat_mv_blx = lookupVfloatFor[charging_limit];
+
+		if (vfloat_mv_blx > vfloat_mv_original) {
+			pr_info("BLX setting vfloat voltage not set from %d to %d because charging_limit is %d chip previous value was %d - because it is higher than requested voltage.\n",
+				vfloat_mv_original, vfloat_mv_blx, charging_limit, chip->vfloat_mv);
+		} else {
+			pr_info("BLX setting vfloat voltage from %d to %d because charging_limit is %d chip previous value was %d.\n",
+				vfloat_mv_original, vfloat_mv_blx, charging_limit, chip->vfloat_mv);
+			vfloat_mv = vfloat_mv_blx;
+		}
+	} else {
+		pr_info("BLX setting vfloat voltage not set because charging_limit is %d and out of range.\n",
+			charging_limit);
+    }
+
+#endif
 
 	if ((vfloat_mv < MIN_FLOAT_MV) || (vfloat_mv > MAX_FLOAT_MV)) {
 		dev_err(chip->dev, "bad float voltage mv =%d asked to set\n",
@@ -4708,6 +4800,14 @@ static void handle_usb_insertion(struct smbchg_chip *chip)
 	pr_smb(PR_STATUS,
 		"inserted type = %d (%s)", usb_supply_type, usb_type_name);
 
+#ifdef CONFIG_BLX
+	pr_info("BLX chip->vfloat_mv is %d\n",
+			chip->vfloat_mv);
+
+	// we have 4400 as MAX_FLOAT_MV_BLX set because chip has it at value
+	smbchg_float_voltage_set(chip, MAX_FLOAT_MV_BLX);
+#endif
+
 	smbchg_aicl_deglitch_wa_check(chip);
 	smbchg_change_usb_supply_type(chip, usb_supply_type);
 	if (!chip->skip_usb_notification) {
@@ -5771,7 +5871,7 @@ static ssize_t smb_battery_test_status_store(struct device *dev,
 		goto exit;
 	}
 	BatteryTestStatus_enable = 1;
-	
+
 exit:
 	return retval;
 }

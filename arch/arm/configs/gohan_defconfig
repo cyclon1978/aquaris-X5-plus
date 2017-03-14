@@ -663,6 +663,9 @@ CONFIG_QCOM_TDLS=y
 CONFIG_QCOM_VOWIFI_11R=y
 CONFIG_ENABLE_LINUX_REG=y
 
+# battery life extender
+CONFIG_BLX=y
+
 ########################################################################
 
 CONFIG_LOCALVERSION="-v1.000"
