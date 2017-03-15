@@ -681,5 +681,5 @@ CONFIG_JUMP_LABEL=y
 
 ########################################################################
 
-CONFIG_LOCALVERSION="-v1.000"
+CONFIG_LOCALVERSION="-v1.001"
 
