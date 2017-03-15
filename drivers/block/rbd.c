@@ -1675,7 +1675,7 @@ static void rbd_osd_stat_callback(struct rbd_obj_request *obj_request)
 
 static void rbd_osd_call_callback(struct rbd_obj_request *obj_request)
 {
-	dout("%s: obj %p\n", __func__, obj_request);
+	dout("%s: obj %pK\n", __func__, obj_request);
 
 	if (obj_request_img_data_test(obj_request))
 		rbd_osd_copyup_callback(obj_request);
@@ -2327,7 +2327,7 @@ rbd_osd_copyup_callback(struct rbd_obj_request *obj_request)
 	struct page **pages;
 	u32 page_count;
 
-	dout("%s: obj %p\n", __func__, obj_request);
+	dout("%s: obj %pK\n", __func__, obj_request);
 
 	rbd_assert(obj_request->type == OBJ_REQUEST_BIO);
 	rbd_assert(obj_request_img_data_test(obj_request));

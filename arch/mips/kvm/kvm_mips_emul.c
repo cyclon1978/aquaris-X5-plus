@@ -1031,7 +1031,7 @@ kvm_mips_emulate_cache(uint32_t inst, uint32_t *opc, uint32_t cause,
 
 		if (kvm_mips_host_tlb_lookup(vcpu, va) < 0 &&
 		    kvm_mips_handle_kseg0_tlb_fault(va, vcpu)) {
-			kvm_err("%s: handling mapped kseg0 tlb fault for %lx, vcpu: %p, ASID: %#lx\n",
+			kvm_err("%s: handling mapped kseg0 tlb fault for %lx, vcpu: %pK, ASID: %#lx\n",
 				__func__, va, vcpu, read_c0_entryhi());
 			er = EMULATE_FAIL;
 			preempt_enable();
@@ -1072,7 +1072,7 @@ kvm_mips_emulate_cache(uint32_t inst, uint32_t *opc, uint32_t cause,
 			/* We fault an entry from the guest tlb to the shadow host TLB */
 			if (kvm_mips_handle_mapped_seg_tlb_fault(vcpu, tlb,
 								 NULL, NULL)) {
-				kvm_err("%s: handling mapped seg tlb fault for %lx, index: %u, vcpu: %p, ASID: %#lx\n",
+				kvm_err("%s: handling mapped seg tlb fault for %lx, index: %u, vcpu: %pK, ASID: %#lx\n",
 					__func__, va, index, vcpu,
 					read_c0_entryhi());
 				er = EMULATE_FAIL;
@@ -1877,7 +1877,7 @@ kvm_mips_handle_tlbmiss(unsigned long cause, uint32_t *opc,
 			/* OK we have a Guest TLB entry, now inject it into the shadow host TLB */
 			if (kvm_mips_handle_mapped_seg_tlb_fault(vcpu, tlb,
 								 NULL, NULL)) {
-				kvm_err("%s: handling mapped seg tlb fault for %lx, index: %u, vcpu: %p, ASID: %#lx\n",
+				kvm_err("%s: handling mapped seg tlb fault for %lx, index: %u, vcpu: %pK, ASID: %#lx\n",
 					__func__, va, index, vcpu,
 					read_c0_entryhi());
 				er = EMULATE_FAIL;

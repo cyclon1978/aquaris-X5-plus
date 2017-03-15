@@ -929,7 +929,7 @@ uint32_t kvm_get_inst(uint32_t *opc, struct kvm_vcpu *vcpu)
 			if (kvm_mips_handle_mapped_seg_tlb_fault(vcpu,
 						&vcpu->arch.guest_tlb[index],
 						NULL, NULL)) {
-				kvm_err("%s: handling mapped seg tlb fault failed for %p, index: %u, vcpu: %p, ASID: %#lx\n",
+				kvm_err("%s: handling mapped seg tlb fault failed for %pK, index: %u, vcpu: %pK, ASID: %#lx\n",
 					__func__, opc, index, vcpu,
 					read_c0_entryhi());
 				kvm_mips_dump_guest_tlbs(vcpu);
