@@ -31,6 +31,8 @@
 #define DEF_LOAD_THRESH_UP		80
 #define DEF_SAMPLING_MS			50
 #define DEF_VOTE_THRESHOLD		3
+#define DEF_MAX_CORES_SCREENOFF 1
+#define DEF_ENABLED_BY_DEFAULT  true
 
 #define N_BIG_CPUS				4
 #define N_LITTLE_CPUS			4
@@ -68,12 +70,12 @@ module_param(vote_threshold_down, uint, 0664);
 static unsigned int vote_threshold_up = DEF_VOTE_THRESHOLD;
 module_param(vote_threshold_up, uint, 0664);
 
-static unsigned int max_cores_screenoff = DEF_VOTE_THRESHOLD;
+static unsigned int max_cores_screenoff = DEF_MAX_CORES_SCREENOFF;
 module_param(max_cores_screenoff, uint, 0664);
 
 static ktime_t last_action;
 
-static bool active = false;
+static bool active = DEF_ENABLED_BY_DEFAULT;
 static bool workqueue_suspended = true;
 
 static bool screen_on = true;
