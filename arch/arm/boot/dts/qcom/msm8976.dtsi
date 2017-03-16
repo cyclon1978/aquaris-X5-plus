@@ -58,6 +58,7 @@
 		#address-cells = <2>;
 		#size-cells = <2>;
 
+		/* 85b00000..86800000 */
 		other_ext_mem: other_ext_region@0 {
 			linux,reserve-contiguous-region;
 			linux,reserve-region;
@@ -66,6 +67,7 @@
 			label = "other_ext_mem";
 		};
 
+		/* 86C00000..8C200000 */
 		modem_mem: modem_region@0 {
 			linux,reserve-contiguous-region;
 			linux,reserve-region;
@@ -74,6 +76,7 @@
 			label = "modem_mem";
 		};
 
+		/* 8C200000..8DA00000 */
 		reloc_mem: reloc_region@0 {
 			linux,reserve-contiguous-region;
 			linux,reserve-region;
@@ -109,6 +112,7 @@
 			reg = <0x0 0x0 0x0 0x314000>;
 		};
 
+		/* 83000000..85800000 */
 		cont_splash_mem: splash_region@83000000 {
 			linux,reserve-contiguous-region;
 			linux,reserve-region;
@@ -123,6 +127,7 @@
 			label = "adsp_mem";
 		};
 
+		/* 8DD00000..8F600000 */
 		tzapp_mem: tzapp_region@0 {
 			linux,reserve-contiguous-region;
 			linux,reserve-region;
