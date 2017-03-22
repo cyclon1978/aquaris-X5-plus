@@ -911,14 +911,14 @@ static void hdd_GetRssiCB( v_S7_t rssi, tANI_U32 staId, void *pContext )
 
    if (ioctl_debug)
    {
-      pr_info("%s: rssi [%d] STA [%d] pContext [%pK]\n",
+      pr_info("%s: rssi [%d] STA [%d] pContext [%p]\n",
               __func__, (int)rssi, (int)staId, pContext);
    }
 
    if (NULL == pContext)
    {
       hddLog(VOS_TRACE_LEVEL_ERROR,
-             "%s: Bad param, pContext [%pK]",
+             "%s: Bad param, pContext [%p]",
              __func__, pContext);
       return;
    }
@@ -937,11 +937,11 @@ static void hdd_GetRssiCB( v_S7_t rssi, tANI_U32 staId, void *pContext )
       /* the caller presumably timed out so there is nothing we can do */
       spin_unlock(&hdd_context_lock);
       hddLog(VOS_TRACE_LEVEL_WARN,
-             "%s: Invalid context, pAdapter [%pK] magic [%08x]",
+             "%s: Invalid context, pAdapter [%p] magic [%08x]",
               __func__, pAdapter, pStatsContext->magic);
       if (ioctl_debug)
       {
-         pr_info("%s: Invalid context, pAdapter [%pK] magic [%08x]\n",
+         pr_info("%s: Invalid context, pAdapter [%p] magic [%08x]\n",
                  __func__, pAdapter, pStatsContext->magic);
       }
       return;
@@ -974,14 +974,14 @@ static void hdd_GetSnrCB(tANI_S8 snr, tANI_U32 staId, void *pContext)
 
    if (ioctl_debug)
    {
-      pr_info("%s: snr [%d] STA [%d] pContext [%pK]\n",
+      pr_info("%s: snr [%d] STA [%d] pContext [%p]\n",
               __func__, (int)snr, (int)staId, pContext);
    }
 
    if (NULL == pContext)
    {
       hddLog(VOS_TRACE_LEVEL_ERROR,
-             "%s: Bad param, pContext [%pK]",
+             "%s: Bad param, pContext [%p]",
              __func__, pContext);
       return;
    }
@@ -1000,11 +1000,11 @@ static void hdd_GetSnrCB(tANI_S8 snr, tANI_U32 staId, void *pContext)
       /* the caller presumably timed out so there is nothing we can do */
       spin_unlock(&hdd_context_lock);
       hddLog(VOS_TRACE_LEVEL_WARN,
-             "%s: Invalid context, pAdapter [%pK] magic [%08x]",
+             "%s: Invalid context, pAdapter [%p] magic [%08x]",
               __func__, pAdapter, pStatsContext->magic);
       if (ioctl_debug)
       {
-         pr_info("%s: Invalid context, pAdapter [%pK] magic [%08x]\n",
+         pr_info("%s: Invalid context, pAdapter [%p] magic [%08x]\n",
                  __func__, pAdapter, pStatsContext->magic);
       }
       return;
@@ -1259,14 +1259,14 @@ static void hdd_GetRoamRssiCB( v_S7_t rssi, tANI_U32 staId, void *pContext )
    hdd_adapter_t *pAdapter;
    if (ioctl_debug)
    {
-      pr_info("%s: rssi [%d] STA [%d] pContext [%pK]\n",
+      pr_info("%s: rssi [%d] STA [%d] pContext [%p]\n",
               __func__, (int)rssi, (int)staId, pContext);
    }
 
    if (NULL == pContext)
    {
       hddLog(VOS_TRACE_LEVEL_ERROR,
-             "%s: Bad param, pContext [%pK]",
+             "%s: Bad param, pContext [%p]",
              __func__, pContext);
       return;
    }
@@ -1285,11 +1285,11 @@ static void hdd_GetRoamRssiCB( v_S7_t rssi, tANI_U32 staId, void *pContext )
       /* the caller presumably timed out so there is nothing we can do */
       spin_unlock(&hdd_context_lock);
       hddLog(VOS_TRACE_LEVEL_WARN,
-             "%s: Invalid context, pAdapter [%pK] magic [%08x]",
+             "%s: Invalid context, pAdapter [%p] magic [%08x]",
               __func__, pAdapter, pStatsContext->magic);
       if (ioctl_debug)
       {
-         pr_info("%s: Invalid context, pAdapter [%pK] magic [%08x]\n",
+         pr_info("%s: Invalid context, pAdapter [%p] magic [%08x]\n",
                  __func__, pAdapter, pStatsContext->magic);
       }
       return;
@@ -3333,7 +3333,7 @@ static void iw_power_callback_fn (void *pContext, eHalStatus status)
    if (NULL == pContext)
    {
        hddLog(VOS_TRACE_LEVEL_ERROR,
-            "%s: Bad param, pContext [%pK]",
+            "%s: Bad param, pContext [%p]",
               __func__, pContext);
        return;
    }
@@ -3399,14 +3399,14 @@ void hdd_GetClassA_statisticsCB(void *pStats, void *pContext)
 
    if (ioctl_debug)
    {
-      pr_info("%s: pStats [%pK] pContext [%pK]\n",
+      pr_info("%s: pStats [%p] pContext [%p]\n",
               __func__, pStats, pContext);
    }
 
    if ((NULL == pStats) || (NULL == pContext))
    {
       hddLog(VOS_TRACE_LEVEL_ERROR,
-             "%s: Bad param, pStats [%pK] pContext [%pK]",
+             "%s: Bad param, pStats [%p] pContext [%p]",
               __func__, pStats, pContext);
       return;
    }
@@ -3426,11 +3426,11 @@ void hdd_GetClassA_statisticsCB(void *pStats, void *pContext)
       /* the caller presumably timed out so there is nothing we can do */
       spin_unlock(&hdd_context_lock);
       hddLog(VOS_TRACE_LEVEL_WARN,
-             "%s: Invalid context, pAdapter [%pK] magic [%08x]",
+             "%s: Invalid context, pAdapter [%p] magic [%08x]",
               __func__, pAdapter, pStatsContext->magic);
       if (ioctl_debug)
       {
-         pr_info("%s: Invalid context, pAdapter [%pK] magic [%08x]\n",
+         pr_info("%s: Invalid context, pAdapter [%p] magic [%08x]\n",
                  __func__, pAdapter, pStatsContext->magic);
       }
       return;
@@ -3531,14 +3531,14 @@ static void hdd_get_station_statisticsCB(void *pStats, void *pContext)
 
    if (ioctl_debug)
    {
-      pr_info("%s: pStats [%pK] pContext [%pK]\n",
+      pr_info("%s: pStats [%p] pContext [%p]\n",
               __func__, pStats, pContext);
    }
 
    if ((NULL == pStats) || (NULL == pContext))
    {
       hddLog(VOS_TRACE_LEVEL_ERROR,
-             "%s: Bad param, pStats [%pK] pContext [%pK]",
+             "%s: Bad param, pStats [%p] pContext [%p]",
              __func__, pStats, pContext);
       return;
    }
@@ -3558,11 +3558,11 @@ static void hdd_get_station_statisticsCB(void *pStats, void *pContext)
       /* the caller presumably timed out so there is nothing we can do */
       spin_unlock(&hdd_context_lock);
       hddLog(VOS_TRACE_LEVEL_WARN,
-             "%s: Invalid context, pAdapter [%pK] magic [%08x]",
+             "%s: Invalid context, pAdapter [%p] magic [%08x]",
              __func__, pAdapter, pStatsContext->magic);
       if (ioctl_debug)
       {
-         pr_info("%s: Invalid context, pAdapter [%pK] magic [%08x]\n",
+         pr_info("%s: Invalid context, pAdapter [%p] magic [%08x]\n",
                  __func__, pAdapter, pStatsContext->magic);
       }
       return;
@@ -6556,7 +6556,7 @@ static void hdd_GetCurrentAntennaIndex(int antennaId, void *pContext)
    if (NULL == pContext)
    {
       hddLog(VOS_TRACE_LEVEL_ERROR,
-             "%s: Bad param, pContext [%pK]",
+             "%s: Bad param, pContext [%p]",
              __func__, pContext);
       return;
    }
@@ -6571,7 +6571,7 @@ static void hdd_GetCurrentAntennaIndex(int antennaId, void *pContext)
       /* the caller presumably timed out so there is nothing we can do */
       spin_unlock(&hdd_context_lock);
       hddLog(VOS_TRACE_LEVEL_WARN,
-             "%s: Invalid context, pAdapter [%pK] magic [%08x]",
+             "%s: Invalid context, pAdapter [%p] magic [%08x]",
               __func__, pAdapter, context->magic);
       return;
    }
@@ -7769,7 +7769,7 @@ void hdd_wmm_tx_snapshot(hdd_adapter_t *pAdapter)
                     spin_lock_bh(
                         &pPeerInfo->ibssStaInfo[i].wmm_tx_queue[j].lock);
                     hddLog(LOGE,
-                        "HDD TxQueue Info For AC: %d Count: %d PrevAdress:%pK, NextAddress:%pK",
+                        "HDD TxQueue Info For AC: %d Count: %d PrevAdress:%p, NextAddress:%p",
                         j, pPeerInfo->ibssStaInfo[i].wmm_tx_queue[j].count,
                         pPeerInfo->ibssStaInfo[i].wmm_tx_queue[j].anchor.prev,
                         pPeerInfo->ibssStaInfo[i].wmm_tx_queue[j].anchor.next);
@@ -11939,7 +11939,7 @@ int hdd_register_wext(struct net_device *dev)
 
 int hdd_UnregisterWext(struct net_device *dev)
 {
-   VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,"In %s %pK", __func__, dev);
+   VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,"In %s %p", __func__, dev);
    if (dev != NULL)
    {
        rtnl_lock();

@@ -2370,7 +2370,7 @@ static void hdd_ssr_restart_sap(hdd_context_t *hdd_ctx)
 	while (NULL != adapter_node && VOS_STATUS_SUCCESS == status) {
 		adapter = adapter_node->pAdapter;
 		if (adapter && adapter->device_mode == WLAN_HDD_SOFTAP) {
-			hddLog(VOS_TRACE_LEVEL_INFO, FL("in sap mode %pK"),
+			hddLog(VOS_TRACE_LEVEL_INFO, FL("in sap mode %p"),
 				adapter);
 			wlan_hdd_start_sap(adapter);
 		}
