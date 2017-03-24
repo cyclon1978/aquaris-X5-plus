@@ -567,10 +567,13 @@ CONFIG_MSM_TZ_LOG=y
 #
 CONFIG_EXT2_FS=y
 CONFIG_EXT2_FS_XATTR=y
-CONFIG_EXT3_FS=y
+# CONFIG_EXT3_FS is not set
 # CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
 CONFIG_EXT4_FS=y
+CONFIG_EXT4_USE_FOR_EXT23=y
 CONFIG_EXT4_FS_SECURITY=y
+CONFIG_EXT4_FS_ENCRYPTION=y
+CONFIG_FS_ENCRYPTION=y
 CONFIG_FUSE_FS=y
 
 #
@@ -691,6 +694,10 @@ CONFIG_PSTORE_LAST_KMSG=y
 
 # Optimize trace point call sites
 CONFIG_JUMP_LABEL=y
+
+# enable both for early printk
+# CONFIG_EARLY_PRINTK is not set
+# CONFIG_EARLY_PRINTK_DIRECT is not set
 
 ########################################################################
 
