@@ -755,7 +755,7 @@ CONFIG_JUMP_LABEL=y
 
 ########################################################################
 
-CONFIG_LOCALVERSION="-v1.001"
+CONFIG_LOCALVERSION="-v1.002"
 
 CONFIG_ENCRYPTED_KEYS=y
 
