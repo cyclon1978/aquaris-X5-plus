@@ -620,6 +620,9 @@ static void synaptics_rmi4_prox_reset(struct synaptics_rmi4_data *rmi4_data)
 
 	prox_set_hover_finger_en();
 
+	// why not reset the params?
+	prox_set_params();
+
 	return;
 }
 
