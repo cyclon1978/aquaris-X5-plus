@@ -793,3 +793,4 @@ CONFIG_SERIAL_MSM_HS=y
 # deny write access because it is dangerous
 CONFIG_MSM_SPMI_DEBUGFS_RO=y
 
+CONFIG_UUID=y
