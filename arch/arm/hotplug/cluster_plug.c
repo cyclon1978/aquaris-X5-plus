@@ -539,6 +539,12 @@ static void __exit cluster_plug_exit(void)
 	pr_info("%s cluster_plug unregistration complete\n", __FUNCTION__);
 }
 
+bool is_clusterplug_enabled(void)
+{
+       return active;
+}
+
+
 MODULE_AUTHOR("Sultan Qasim Khan <sultanqasim@gmail.com> and Christopher R. Palmer <crpalmer@gmail.com>");
 MODULE_DESCRIPTION("'cluster_plug' - A cluster based hotplug for homogeneous"
         "ARM big.LITTLE systems where the big cluster is preferred."
