@@ -80,7 +80,6 @@ obj-$(CONFIG_FP_GOODIX)		+= gf_spi.o
 
 obj-$(CONFIG_SENSORS_BMA2X2)	+= bma2x2.o
 obj-$(CONFIG_SENSORS_LTR553)	+= ltr553.o
-obj-$(CONFIG_HALL)				+= hall.o
 
 ifeq ($(CONFIG_SENSORS_BMA2X2_ENABLE_INT1),y)
 	EXTRA_CFLAGS += -DBMA2X2_ENABLE_INT1
