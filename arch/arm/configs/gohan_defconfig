@@ -769,9 +769,12 @@ CONFIG_JUMP_LABEL=y
 # USB fastcharge with 900mA
 CONFIG_FORCE_FAST_CHARGE=y
 
+# Adreno idler
+CONFIG_ADRENO_IDLER=y
+
 ########################################################################
 
-CONFIG_LOCALVERSION="-v1.005"
+CONFIG_LOCALVERSION="-v1.006"
 
 CONFIG_ENCRYPTED_KEYS=y
 
