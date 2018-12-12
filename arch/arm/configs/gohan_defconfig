@@ -775,8 +775,6 @@ CONFIG_ADRENO_IDLER=y
 
 ########################################################################
 
-CONFIG_LOCALVERSION="-v1.006"
-
 CONFIG_ENCRYPTED_KEYS=y
 
 # new: check it
