@@ -86,8 +86,14 @@ void unlock_device_hotplug(void)
 {
 	mutex_unlock(&device_hotplug_lock);
 }
+#ifdef CONFIG_CLUSTER_PLUG
 /* ======================= clusterplug interface ======================= */
 bool is_clusterplug_enabled(void);
+#else
+bool is_clusterplug_enabled(void) {
+	return false;
+}
+#endif
 /* ======================== clusterplug helper ========================= */
 static bool isDisabledOrOverwritten(struct cpu_data *state) {
 	return (state->disabled || is_clusterplug_enabled());
